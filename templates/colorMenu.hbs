@@ -1,0 +1,18 @@
+<form>
+    <div class="main-content">
+        {{#each this}}
+        <div class="form-group">
+            <label>{{label}}</label>
+            <div class="form-fields">
+                <input type="text" name="{{@key}}" value="{{color}}" data-dtype="String">
+                <input type="color" value="{{color}}" data-edit="{{@key}}">
+            </div>
+        </div>
+        {{/each}}
+    </div>
+
+    <div class="flexrow">
+        <button type="submit"><i class="fas fa-save"></i> {{localize "SETTINGS.Save"}}</button>
+        <button type="button" name="reset"><i class="fas fa-undo"></i> {{localize "SETTINGS.Reset"}}</button>
+    </div>
+</form>

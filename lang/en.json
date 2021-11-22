@@ -1,0 +1,49 @@
+{
+    "characterMonitor": {
+        "settings": {
+            "cmColorsMenu": {
+                "name": "Customize Character Monitor Colors",
+                "label": "Customize"
+            },
+            "monitorEquip": {
+                "name": "Monitor Equipment",
+                "hint": "Tracks when a character equips/unequips equipment."
+            },
+            "monitorSpellPrep": {
+                "name": "Monitor Spell Preparation",
+                "hint": "Tracks when a character prepares/unprepares a spell."
+            },
+            "monitorSpellSlots": {
+                "name": "Monitor Spell Slots",
+                "hint": "Tracks when a character changes spell slot counts on their character sheet."
+            },
+            "monitorFeats": {
+                "name": "Monitor Features",
+                "hint": "Tracks when a character changes feature use counts on their character sheet."
+            },
+            "showGMonly": {
+                "name": "Display Character Monitor to GM Users only",
+                "hint": "Chat messages can be revealed to players using context menu."
+            },
+            "showToggle": {
+                "name": "Show Character Monitor Toggle",
+                "hint": "Temporarily disable Character Monitor by toggling off the control button on the token toolbar. The control button is only visible to GM users."
+            },
+            "trashIcon": {
+                "name": "Enable Health Monitor Chat Message Trash Icon"
+            }
+        },
+        "control": {
+            "title": "Toggle Character Monitor"
+        },
+        "chatMessage": {
+            "equipped": "equipped",
+            "unequipped": "unequipped",
+            "prepared": "prepared",
+            "unprepared": "unprepared",
+            "aSpell": "a spell",
+            "uses": "uses",
+            "SpellSlots": "Spell Slots"
+        }
+    }
+}
