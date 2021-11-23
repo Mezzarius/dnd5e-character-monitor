@@ -311,8 +311,10 @@ class CharacterMonitor {
             }
 
             if (game.settings.get(moduleName, "monitorResources") && ("resources" in (data.data || {}))) {
-                const isRest = await checkSecondHook("restCompleted");
-                if (isRest) return;
+                const isRest = checkSecondHook("restCompleted");
+                const itemRolled = checkSecondHook("createChatMessage");
+                const res = await Promise.all([isRest, itemRolled]);
+                if (res.includes(true)) return;
 
                 for (const resource of Object.keys(data.data.resources)) {
                     if (!(("value" in data.data.resources[resource]) || ("max" in data.data.resources[resource]))) continue;
