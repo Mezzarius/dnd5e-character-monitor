@@ -9,6 +9,10 @@
                 "name": "Monitor Equipment",
                 "hint": "Tracks when a character equips/unequips equipment."
             },
+            "monitorAttune": {
+                "name": "Monitor Attunement",
+                "hint": "Tracks when a character attunes to equipment or breaks attunement."
+            },
             "monitorSpellPrep": {
                 "name": "Monitor Spell Preparation",
                 "hint": "Tracks when a character prepares/unprepares a spell."
@@ -47,7 +51,13 @@
             "unprepared": "unprepared",
             "aSpell": "a spell",
             "uses": "uses",
+            "attunesTo": "attunes to an item",
+            "breaksAttune": "breaks attunement to an item",
             "SpellSlots": "Spell Slots"
+        },
+        "colorMenu": {
+            "on": "Equip/Prepare/Attune",
+            "off": "Unequip/Unprepare/Break Attunement"
         }
     }
 }

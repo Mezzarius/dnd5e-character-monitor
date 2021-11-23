@@ -66,6 +66,15 @@ class CharacterMonitor {
             config: true
         });
 
+        game.settings.register(moduleName, "monitorAttune", {
+            name: game.i18n.localize("characterMonitor.settings.monitorAttune.name"),
+            hint: game.i18n.localize("characterMonitor.settings.monitorAttune.hint"),
+            scope: "world",
+            type: Boolean,
+            default: true,
+            config: true
+        });
+
         game.settings.register(moduleName, "monitorSpellPrep", {
             name: game.i18n.localize("characterMonitor.settings.monitorSpellPrep.name"),
             hint: game.i18n.localize("characterMonitor.settings.monitorSpellPrep.hint"),
@@ -212,7 +221,7 @@ class CharacterMonitor {
 
             // Get currently monitored changes
             const monitoredChangesDict = {};
-            for (const monitor of ["monitorEquip", "monitorSpellPrep", "monitorFeats"]) {
+            for (const monitor of ["monitorEquip", "monitorSpellPrep", "monitorFeats", "monitorAttune"]) {
                 monitoredChangesDict[monitor] = game.settings.get(moduleName, monitor);
             }
 
@@ -220,8 +229,9 @@ class CharacterMonitor {
             const isEquip = monitoredChangesDict["monitorEquip"] && (item.type === "equipment" || item.type === "weapon") && "equipped" in (data.data || {});
             const isSpellPrep = monitoredChangesDict["monitorSpellPrep"] && item.type === "spell" && "prepared" in (data?.data?.preparation || {});
             const isFeat = monitoredChangesDict["monitorFeats"] && item.type === "feat" && ("value" in (data?.data?.uses || {}) || "max" in (data?.data?.uses || {}));
+            const isAttune = monitoredChangesDict["monitorAttune"] && (item.type === "equipment" || item.type === "weapon") && "attunement" in (data.data || {});
 
-            if (!(isEquip || isSpellPrep || isFeat)) return;
+            if (!(isEquip || isSpellPrep || isFeat || isAttune)) return;
 
             // If "showGMonly" setting enabled, whisper to GM users // Potentially change this to be depenent on setting if NPCs should be monitored (See health-monitor.js line 213)
             const whisper = game.settings.get(moduleName, "showGMonly") ?
@@ -272,7 +282,23 @@ class CharacterMonitor {
 
                 // Determine if update was initiated by item being rolled
                 const itemRolled = await checkSecondHook("createChatMessage");
-                if (itemRolled) return;
+                if (!itemRolled) {
+                    await ChatMessage.create({
+                        content,
+                        whisper
+                    });
+                }
+            }
+
+            if (isAttune && (data.data.attunement === 1 || data.data.attunement === 2)) {
+                const attuneStatus = data.data.attunement === 2 ? game.i18n.localize("characterMonitor.chatMessage.attunesTo") : game.i18n.localize("characterMonitor.chatMessage.breaksAttune");
+                const content = `
+                    <div class="cm-message cm-${data.data.attunement === 2 ? "on" : "off"}">
+                        <span>
+                            ${characterName} ${attuneStatus}: ${itemName}
+                        </span>
+                    </div>
+                `;
 
                 await ChatMessage.create({
                     content,
@@ -353,19 +379,19 @@ class CharacterMonitorColorMenu extends FormApplication {
         const data = {
             on: {
                 color: settingsData.on,
-                label: "Equip/Prepare"
+                label: game.i18n.localize("characterMonitor.colorMenu.on")
             },
             off: {
                 color: settingsData.off,
-                label: "Unequip/Unprepare"
+                label: game.i18n.localize("characterMonitor.colorMenu.off")
             },
             slots: {
                 color: settingsData.slots,
-                label: "Spell Slots"
+                label: game.i18n.localize("characterMonitor.chatMessage.SpellSlots")
             },
             feats: {
                 color: settingsData.feats,
-                label: "Features"
+                label: game.i18n.localize("DND5E.Features")
             }
         };
 
