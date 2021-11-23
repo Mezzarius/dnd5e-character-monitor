@@ -307,12 +307,12 @@ class CharacterMonitor {
             }
         });
 
-        // Spell Slot changes
         Hooks.on("updateActor", async (actor, data, options, userID) => {
             const whisper = game.settings.get(moduleName, "showGMonly") ?
                 game.users.filter(u => u.isGM).map(u => u.id) : [];
             const characterName = actor.name;
 
+            // Spell Slot changes
             if (game.settings.get(moduleName, "monitorSpellSlots") && ("spells" in (data.data || {}))) {
                 // Determine if update was initiated by item being rolled
                 const itemRolled = await checkSecondHook("createChatMessage");
@@ -336,6 +336,7 @@ class CharacterMonitor {
                 }
             }
 
+            // Resource Changes
             if (game.settings.get(moduleName, "monitorResources") && ("resources" in (data.data || {}))) {
                 const isRest = checkSecondHook("restCompleted");
                 const itemRolled = checkSecondHook("createChatMessage");
@@ -346,7 +347,7 @@ class CharacterMonitor {
                     if (!(("value" in data.data.resources[resource]) || ("max" in data.data.resources[resource]))) continue;
 
                     const content = `
-                        <div class="cm-message cm-slots">
+                        <div class="cm-message cm-feats">
                             <span>
                                 ${characterName} | ${actor.data.data.resources[resource].label || resource}: ${actor.data.data.resources[resource].value} / ${actor.data.data.resources[resource].max || "0"}
                             </span>
