@@ -4,6 +4,9 @@
     "description": "Log an alert in chat when certain changes to an actor are made.",
     "version": "1.0.0",
     "author": "enso#0361",
+    "sytem": [
+        "dnd5e"
+    ],
     "esmodules": [
         "./scripts/dnd5e-character-monitor.js"
     ],
