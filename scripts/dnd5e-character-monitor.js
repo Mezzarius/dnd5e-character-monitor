@@ -210,8 +210,10 @@ class CharacterMonitor {
     static registerReadyHooks() {
         // Equipment, Spell Preparation, and Feature changes
         Hooks.on("updateItem", async (item, data, options, userID) => {
+            if (!game.user.isGM) return;
+
             // If owning character sheet is not open, then change was not made via character sheet, return
-            if (Object.keys(item.parent?.apps || {}).length === 0) return;
+            //if (Object.keys(item.parent?.apps || {}).length === 0) return;
 
             // If item owner is not a PC, return // Potentially change this to be depenent on setting if NPCs should be monitored
             if (item.parent.type !== "character") return;
@@ -244,7 +246,7 @@ class CharacterMonitor {
             if (isEquip) {
                 const content = `
                     <div class="cm-message cm-${data.data.equipped ? "on" : "off"}">
-                        <span>
+                    <span style="padding-right: 5%">
                             ${characterName} ${data.data.equipped ? game.i18n.localize("characterMonitor.chatMessage.equipped") : game.i18n.localize("characterMonitor.chatMessage.unequipped")}: ${itemName}
                         </span>
                     </div>
@@ -274,7 +276,7 @@ class CharacterMonitor {
             if (isFeat) {
                 const content = `
                     <div class="cm-message cm-feats">
-                        <span>
+                        <span style="padding-right: 5%">
                             ${characterName} | ${itemName}: ${item.data.data.uses.value}/${item.data.data.uses.max} ${game.i18n.localize("characterMonitor.chatMessage.uses")}
                         </span>
                     </div>
@@ -294,7 +296,7 @@ class CharacterMonitor {
                 const attuneStatus = data.data.attunement === 2 ? game.i18n.localize("characterMonitor.chatMessage.attunesTo") : game.i18n.localize("characterMonitor.chatMessage.breaksAttune");
                 const content = `
                     <div class="cm-message cm-${data.data.attunement === 2 ? "on" : "off"}">
-                        <span>
+                        <span style="padding-right: 5%">
                             ${characterName} ${attuneStatus}: ${itemName}
                         </span>
                     </div>
@@ -308,6 +310,8 @@ class CharacterMonitor {
         });
 
         Hooks.on("updateActor", async (actor, data, options, userID) => {
+            if (!game.user.isGM) return;
+
             const whisper = game.settings.get(moduleName, "showGMonly") ?
                 game.users.filter(u => u.isGM).map(u => u.id) : [];
             const characterName = actor.name;
@@ -323,7 +327,7 @@ class CharacterMonitor {
                     const levelLabel = CONFIG.DND5E.spellLevels[levelNum];
                     const content = `
                         <div class="cm-message cm-slots">
-                            <span>
+                            <span style="padding-right: 5%">
                                 ${characterName} | ${levelLabel} ${game.i18n.localize("characterMonitor.chatMessage.SpellSlots")}: ${actor.data.data.spells[spellLevel].value}/${actor.data.data.spells[spellLevel].max}
                             </span>
                         </div>
@@ -348,7 +352,7 @@ class CharacterMonitor {
 
                     const content = `
                         <div class="cm-message cm-feats">
-                            <span>
+                            <span style="padding-right: 5%">
                                 ${characterName} | ${actor.data.data.resources[resource].label || resource}: ${actor.data.data.resources[resource].value} / ${actor.data.data.resources[resource].max || "0"}
                             </span>
                         </div>
