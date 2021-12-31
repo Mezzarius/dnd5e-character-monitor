@@ -11,7 +11,7 @@
         "./scripts/dnd5e-character-monitor.js"
     ],
     "minimumCoreVersion": "0.8.1",
-    "compatibleCoreVersion": "0.8.9",
+    "compatibleCoreVersion": "9",
     "languages": [
         {
             "lang": "en",
