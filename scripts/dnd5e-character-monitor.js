@@ -211,7 +211,10 @@ class CharacterMonitor {
 
     static registerReadyHooks() {
         // Equipment, Spell Preparation, and Feature changes
-        Hooks.on("preUpdateItem", async (item, data, options, userID) => {
+        Hooks.on("updateItem", async (item, data, options, userID) => {
+            const GMconnected = getGM();
+            if (GMconnected) return;
+            
             // If owning character sheet is not open, then change was not made via character sheet, return
             //if (Object.keys(item.parent?.apps || {}).length === 0) return;
 
@@ -309,7 +312,10 @@ class CharacterMonitor {
             }
         });
 
-        Hooks.on("preUpdateActor", async (actor, data, options, userID) => {
+        Hooks.on("updateActor", async (actor, data, options, userID) => {
+            const GMconnected = getGM();
+            if (GMconnected) return;
+
             const whisper = game.settings.get(moduleName, "showGMonly") ?
                 game.users.filter(u => u.isGM).map(u => u.id) : [];
 
@@ -494,4 +500,10 @@ async function checkSecondHooks(params = {}) {
 
     const res = await Promise.all(promises);
     return res.includes(true);
+}
+
+function getGM() {
+    const activeGMs = game.users.filter(u => u.isGM && u.active);
+    if (!activeGMs.length) return false;
+    return activeGMs[0].id && activeGMs[0].id !== game.user.id;
 }
