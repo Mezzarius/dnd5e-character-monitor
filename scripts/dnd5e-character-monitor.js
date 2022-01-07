@@ -9,7 +9,7 @@ const FEAT_USES_TEMPLATE = `${TEMPLATE_DIR}/featUses.hbs`;
 const SPELL_SLOTS_TEMPLATE = `${TEMPLATE_DIR}/spellSlots.hbs`;
 const RESOURCE_USES_TEMPLATE = `${TEMPLATE_DIR}/resourceUses.hbs`;
 
-Hooks.once("init", async () => {
+Hooks.once("setup", async () => {
     console.log(`${moduleName} | Initializing`);
 
     await loadTemplates([ITEM_EQUIP_TEMPLATE, ITEM_ATTUNE_TEMPLATE, SPELL_PREPARE_TEMPLATE, FEAT_USES_TEMPLATE, SPELL_SLOTS_TEMPLATE, RESOURCE_USES_TEMPLATE]);
@@ -55,7 +55,7 @@ class CharacterMonitor {
                 feats: "#425af5"
             },
             config: false,
-            onChange: () => CharacterMonitor.setColors()
+            onChange: debounce(CharacterMonitor.setCssVariables, 500)
         });
 
 
@@ -119,7 +119,18 @@ class CharacterMonitor {
             scope: "world",
             type: Boolean,
             default: false,
-            config: true
+            config: true,
+            onChange: debounce(CharacterMonitor.setCssVariables, 500)
+        });
+
+        game.settings.register(moduleName, "allowPlayerView", {
+            name: game.i18n.localize("characterMonitor.settings.allowPlayerView.name"),
+            hint: game.i18n.localize("characterMonitor.settings.allowPlayerView.hint"),
+            scope: "world",
+            type: Boolean,
+            default: false,
+            config: true,
+            onChange: debounce(CharacterMonitor.setCssVariables, 500)
         });
 
         game.settings.register(moduleName, "showToggle", {
@@ -133,7 +144,7 @@ class CharacterMonitor {
                 if (!game.user.isGM) return;
 
                 await game.settings.set(moduleName, "cmToggle", true);
-                ui.controls.initialize();
+                setTimeout(() => window.location.reload(), 500);
             }
         });
 
@@ -144,7 +155,7 @@ class CharacterMonitor {
             type: Boolean,
             default: false,
             config: true,
-            onChange: () => window.location.reload()
+            onChange: () => setTimeout(() => window.location.reload(), 500)
         });
 
 
@@ -157,16 +168,47 @@ class CharacterMonitor {
             config: false
         });
 
-        CharacterMonitor.setColors();
+        Hooks.on("renderSettingsConfig", (settingsConfig, html, user) => {
+            const formGroups = html.find('div.form-group');
+
+          	// Disable the player view setting if GM-only mode is disabled.
+		    const playerViewDiv = formGroups.has(`:checkbox[name="${moduleName}.allowPlayerView"]`);
+		    CharacterMonitor.toggleDivs(playerViewDiv, game.settings.get(moduleName, "showGMonly"));
+
+            // Handle the showGMonly checkbox being toggled.
+            const showGMonlyCheckbox = formGroups.find(`:checkbox[name="${moduleName}.showGMonly"]`);
+            showGMonlyCheckbox.change((event) => {
+                CharacterMonitor.toggleDivs(playerViewDiv, event.target.checked);
+            });
+        });
+
+        CharacterMonitor.setCssVariables();
     }
 
-    static setColors() {
+    // Enable / disable inputs in a set of divs.
+	static toggleDivs(divs, enabled) {
+		const inputs = divs.find("input,select");
+		const labels = divs.find("label>span");
+
+		// Disable all inputs in the divs (checkboxes and dropdowns)
+		inputs.prop("disabled", !enabled);
+		// Disable TidyUI's on click events for the labels.
+		labels.css("pointer-events", enabled ? "auto" : "none");
+	}
+
+    static setCssVariables() {
         const root = document.querySelector(':root');
         const colors = game.settings.get(moduleName, "cmColors");
         root.style.setProperty('--dnd5e-cm-on', colors.on);
         root.style.setProperty('--dnd5e-cm-off', colors.off);
         root.style.setProperty('--dnd5e-cm-feats', colors.feats);
         root.style.setProperty('--dnd5e-cm-slots', colors.slots);
+
+        const showGmOnly = game.settings.get(moduleName, "showGMonly");
+        const allowPlayerView = game.settings.get(moduleName, "allowPlayerView");
+
+        const display = ((showGmOnly && !game.user.isGM && !allowPlayerView) ? 'none' : 'flex');
+        root.style.setProperty('--dnd5e-cm-display', display);
     }
 
     // Hooks --------
@@ -235,9 +277,11 @@ class CharacterMonitor {
 
             if (!(isEquip || isSpellPrep || isFeat || isAttune)) return;
 
-            // If "showGMonly" setting enabled, whisper to GM users // Potentially change this to be depenent on setting if NPCs should be monitored (See health-monitor.js line 213)
-            const whisper = game.settings.get(moduleName, "showGMonly") ?
-                game.users.filter(u => u.isGM).map(u => u.id) : [];
+            // If "showGMonly" setting enabled, whisper to all owners (this includes the GM).
+            // Players may or may not actually see the message depending on the allowPlayerView setting.
+            // Potentially change this to be depenent on setting if NPCs should be monitored (See health-monitor.js line 213)
+            const whisper = (game.settings.get(moduleName, "showGMonly") ?
+                game.users.filter(u => item.parent.testUserPermission(u, CONST.ENTITY_PERMISSIONS.OWNER)).map(u => u.id) : null);
 
             // Prepare common content for handlebars templates
             const hbsData = {
