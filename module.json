@@ -10,6 +10,9 @@
     "esmodules": [
         "./scripts/dnd5e-character-monitor.js"
     ],
+    "styles": [
+        "./styles/dnd5e-character-monitor.css"
+    ],
     "minimumCoreVersion": "0.8.1",
     "compatibleCoreVersion": "9",
     "languages": [
