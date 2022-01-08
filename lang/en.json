@@ -33,6 +33,10 @@
                 "name": "Display Character Monitor to GM Users only",
                 "hint": "Chat messages can be revealed to players using context menu."
             },
+            "allowPlayerView": {
+                "name": "Allow players to see their own messages",
+                "hint": "If GM-only mode is enabled, this setting allows players to still see their own monitor messages."
+            },
             "showToggle": {
                 "name": "Show Character Monitor Toggle",
                 "hint": "Temporarily disable Character Monitor by toggling off the control button on the token toolbar. The control button is only visible to GM users."
