@@ -1,0 +1,51 @@
+:root {
+    --dnd5e-cm-on: #06a406;
+    --dnd5e-cm-off: #c50d19;
+    --dnd5e-cm-feats: #425af5;
+    --dnd5e-cm-slots: #b042f5;
+    --dnd5e-cm-display: 'flex';
+}
+
+.message.dnd5e-cm-message {
+    display: var(--dnd5e-cm-display);
+    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+    color: white;
+    text-align: center;
+    font-size: 12px;
+    margin: 2px;
+    padding: 2px;
+    border: 2px solid #191813d6;
+}
+
+.message.dnd5e-cm-message.dnd5e-cm-on {
+	background: var(--dnd5e-cm-on);
+}
+
+.message.dnd5e-cm-message.dnd5e-cm-off {
+	background: var(--dnd5e-cm-off);
+}
+
+.message.dnd5e-cm-message.dnd5e-cm-feats {
+	background: var(--dnd5e-cm-feats);
+}
+
+.message.dnd5e-cm-message.dnd5e-cm-slots {
+	background: var(--dnd5e-cm-slots);
+}
+
+.message.dnd5e-cm-message header.message-header {
+    display: none !important;
+}
+
+.message.dnd5e-cm-message div.dnd5e-cm-content {
+    position: relative;
+}
+
+.message.dnd5e-cm-message span.dnd5e-cm-text {
+    padding-right: 5%;
+}
+
+.message.dnd5e-cm-message span.dnd5e-cm-trash {
+    position: absolute;
+    left: 95%;
+}

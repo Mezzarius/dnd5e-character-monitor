@@ -1,16 +1,18 @@
 const moduleName = "dnd5e-character-monitor";
 // Setting CONSTS
 let trashIconSetting;
-const classToColorSettingDict = {
-    "cm-on": "on",
-    "cm-off": "off",
-    "cm-slots": "slots",
-    "cm-feats": "feats"
-};
+const TEMPLATE_DIR = `modules/${moduleName}/templates`
+const ITEM_EQUIP_TEMPLATE = `${TEMPLATE_DIR}/itemEquip.hbs`;
+const ITEM_ATTUNE_TEMPLATE = `${TEMPLATE_DIR}/itemAttune.hbs`;
+const SPELL_PREPARE_TEMPLATE = `${TEMPLATE_DIR}/spellPrepare.hbs`;
+const FEAT_USES_TEMPLATE = `${TEMPLATE_DIR}/featUses.hbs`;
+const SPELL_SLOTS_TEMPLATE = `${TEMPLATE_DIR}/spellSlots.hbs`;
+const RESOURCE_USES_TEMPLATE = `${TEMPLATE_DIR}/resourceUses.hbs`;
 
-
-Hooks.once("init", () => {
+Hooks.once("setup", async () => {
     console.log(`${moduleName} | Initializing`);
+
+    await loadTemplates([ITEM_EQUIP_TEMPLATE, ITEM_ATTUNE_TEMPLATE, SPELL_PREPARE_TEMPLATE, FEAT_USES_TEMPLATE, SPELL_SLOTS_TEMPLATE, RESOURCE_USES_TEMPLATE]);
 
     // Open module API
     window.CharacterMonitor = CharacterMonitor;
@@ -53,7 +55,7 @@ class CharacterMonitor {
                 feats: "#425af5"
             },
             config: false,
-            onChange: () => window.location.reload()
+            onChange: debounce(CharacterMonitor.setCssVariables, 500)
         });
 
 
@@ -117,7 +119,18 @@ class CharacterMonitor {
             scope: "world",
             type: Boolean,
             default: false,
-            config: true
+            config: true,
+            onChange: debounce(CharacterMonitor.setCssVariables, 500)
+        });
+
+        game.settings.register(moduleName, "allowPlayerView", {
+            name: game.i18n.localize("characterMonitor.settings.allowPlayerView.name"),
+            hint: game.i18n.localize("characterMonitor.settings.allowPlayerView.hint"),
+            scope: "world",
+            type: Boolean,
+            default: false,
+            config: true,
+            onChange: debounce(CharacterMonitor.setCssVariables, 500)
         });
 
         game.settings.register(moduleName, "showToggle", {
@@ -131,7 +144,7 @@ class CharacterMonitor {
                 if (!game.user.isGM) return;
 
                 await game.settings.set(moduleName, "cmToggle", true);
-                ui.controls.initialize();
+                setTimeout(() => window.location.reload(), 500);
             }
         });
 
@@ -142,7 +155,7 @@ class CharacterMonitor {
             type: Boolean,
             default: false,
             config: true,
-            onChange: () => window.location.reload()
+            onChange: () => setTimeout(() => window.location.reload(), 500)
         });
 
 
@@ -154,6 +167,48 @@ class CharacterMonitor {
             default: true,
             config: false
         });
+
+        Hooks.on("renderSettingsConfig", (settingsConfig, html, user) => {
+            const formGroups = html.find('div.form-group');
+
+          	// Disable the player view setting if GM-only mode is disabled.
+		    const playerViewDiv = formGroups.has(`:checkbox[name="${moduleName}.allowPlayerView"]`);
+		    CharacterMonitor.toggleDivs(playerViewDiv, game.settings.get(moduleName, "showGMonly"));
+
+            // Handle the showGMonly checkbox being toggled.
+            const showGMonlyCheckbox = formGroups.find(`:checkbox[name="${moduleName}.showGMonly"]`);
+            showGMonlyCheckbox.change((event) => {
+                CharacterMonitor.toggleDivs(playerViewDiv, event.target.checked);
+            });
+        });
+
+        CharacterMonitor.setCssVariables();
+    }
+
+    // Enable / disable inputs in a set of divs.
+	static toggleDivs(divs, enabled) {
+		const inputs = divs.find("input,select");
+		const labels = divs.find("label>span");
+
+		// Disable all inputs in the divs (checkboxes and dropdowns)
+		inputs.prop("disabled", !enabled);
+		// Disable TidyUI's on click events for the labels.
+		labels.css("pointer-events", enabled ? "auto" : "none");
+	}
+
+    static setCssVariables() {
+        const root = document.querySelector(':root');
+        const colors = game.settings.get(moduleName, "cmColors");
+        root.style.setProperty('--dnd5e-cm-on', colors.on);
+        root.style.setProperty('--dnd5e-cm-off', colors.off);
+        root.style.setProperty('--dnd5e-cm-feats', colors.feats);
+        root.style.setProperty('--dnd5e-cm-slots', colors.slots);
+
+        const showGmOnly = game.settings.get(moduleName, "showGMonly");
+        const allowPlayerView = game.settings.get(moduleName, "allowPlayerView");
+
+        const display = ((showGmOnly && !game.user.isGM && !allowPlayerView) ? 'none' : 'flex');
+        root.style.setProperty('--dnd5e-cm-display', display);
     }
 
     // Hooks --------
@@ -178,40 +233,27 @@ class CharacterMonitor {
 
         // Apply custom CSS to Character Monitor chat messages
         Hooks.on("renderChatMessage", (app, html, data) => {
-            const cmMessage = html.find(`.cm-message`);
-            if (!cmMessage.length) return;
+            const flags = data?.message?.flags[moduleName];
+            if (!flags) return;
 
-            const cmClass = cmMessage[0].classList[1];
-            const settingKey = classToColorSettingDict[cmClass]
-            const backgroundColor = game.settings.get(moduleName, "cmColors")[settingKey];
-            html.css("background", backgroundColor); // TODO: figure out coloring mechanism
-            html.css("text-shadow", "-1px -1px 0 #000 , 1px -1px 0 #000 , -1px 1px 0 #000 , 1px 1px 0 #000");
-            html.css("color", "white");
-            html.css("text-align", "center");
-            html.css("font-size", "12px");
-            html.css("margin", "2px");
-            html.css("padding", "2px");
-            html.css("border", "2px solid #191813d6");
-            html.find(".message-sender").text("");
-            html.find(".message-metadata")[0].style.display = "none";
+            if ("equip" in flags) {
+                html.addClass(`dnd5e-cm-message dnd5e-cm-${flags.equip ? "on" : "off"}`);
+            } else if ("feat" in flags) {
+                html.addClass("dnd5e-cm-message dnd5e-cm-feats");
+            } else if ("slot" in flags) {
+                html.addClass("dnd5e-cm-message dnd5e-cm-slots");
+            }
 
             // Optionally add trash icon
             if (trashIconSetting && game.user.isGM) {
-                const cmMessageDiv = html.find(`div.cm-message`);
-                cmMessageDiv.css("position", "relative");
-                $(cmMessageDiv).find(`span`).after(`<span><a class="button message-delete"><i class="fas fa-trash"></i></a></span>`);
-
-                html.find(`a.message-delete`).closest(`span`).css("position", "absolute");
-                html.find(`a.message-delete`).closest(`span`).css("left", "95%");
+                html.find('div.dnd5e-cm-content').append('<span class="dnd5e-cm-trash"><a class="button message-delete"><i class="fas fa-trash"></i></a></span>');
             }
         });
     }
 
     static registerReadyHooks() {
         // Equipment, Spell Preparation, and Feature changes
-        Hooks.on("updateItem", async (item, data, options, userID) => {
-            if (!game.user.isGM) return;
-
+        Hooks.on("preUpdateItem", async (item, data, options, userID) => {
             // If owning character sheet is not open, then change was not made via character sheet, return
             //if (Object.keys(item.parent?.apps || {}).length === 0) return;
 
@@ -235,132 +277,158 @@ class CharacterMonitor {
 
             if (!(isEquip || isSpellPrep || isFeat || isAttune)) return;
 
-            // If "showGMonly" setting enabled, whisper to GM users // Potentially change this to be depenent on setting if NPCs should be monitored (See health-monitor.js line 213)
-            const whisper = game.settings.get(moduleName, "showGMonly") ?
-                game.users.filter(u => u.isGM).map(u => u.id) : [];
+            // If "showGMonly" setting enabled, whisper to all owners (this includes the GM).
+            // Players may or may not actually see the message depending on the allowPlayerView setting.
+            // Potentially change this to be depenent on setting if NPCs should be monitored (See health-monitor.js line 213)
+            const whisper = (game.settings.get(moduleName, "showGMonly") ?
+                game.users.filter(u => item.parent.testUserPermission(u, CONST.ENTITY_PERMISSIONS.OWNER)).map(u => u.id) : null);
 
-            // Prepare common chat message content
-            const characterName = item.parent.name;
-            const itemName = item.name;
+            // Prepare common content for handlebars templates
+            const hbsData = {
+                characterName: item.parent.name,
+                itemName: item.name
+            };
 
             if (isEquip) {
-                const content = `
-                    <div class="cm-message cm-${data.data.equipped ? "on" : "off"}">
-                    <span style="padding-right: 5%">
-                            ${characterName} ${data.data.equipped ? game.i18n.localize("characterMonitor.chatMessage.equipped") : game.i18n.localize("characterMonitor.chatMessage.unequipped")}: ${itemName}
-                        </span>
-                    </div>
-                `;
-
-                await ChatMessage.create({
-                    content,
-                    whisper
+                hbsData.equipped = data.data.equipped;
+                renderTemplate(ITEM_EQUIP_TEMPLATE, hbsData).then(async (content) => {
+                    await ChatMessage.create({
+                        content,
+                        whisper,
+                        flags: { [moduleName]: { equip: data.data.equipped } }
+                    });
                 });
             }
 
             if (isSpellPrep) {
-                const content = `
-                    <div class="cm-message cm-${data.data.preparation.prepared ? "on" : "off"}">
-                        <span>
-                            ${characterName} ${data.data.preparation.prepared ? game.i18n.localize("characterMonitor.chatMessage.prepared") : game.i18n.localize("characterMonitor.chatMessage.unprepared")} ${game.i18n.localize("characterMonitor.chatMessage.aSpell")}: ${itemName}
-                        </span>
-                    </div>
-                `;
-
-                await ChatMessage.create({
-                    content,
-                    whisper
+                hbsData.prepared = data.data.preparation.prepared;
+                renderTemplate(SPELL_PREPARE_TEMPLATE, hbsData).then(async (content) => {
+                    await ChatMessage.create({
+                        content,
+                        whisper,
+                        flags: { [moduleName]: { equip: data.data.preparation.prepared } }
+                    });
                 });
             }
 
             if (isFeat) {
-                const content = `
-                    <div class="cm-message cm-feats">
-                        <span style="padding-right: 5%">
-                            ${characterName} | ${itemName}: ${item.data.data.uses.value}/${item.data.data.uses.max} ${game.i18n.localize("characterMonitor.chatMessage.uses")}
-                        </span>
-                    </div>
-                `;
+                const newUses = data.data.uses;
+                const oldUses = item.data.data.uses;
+                const hasValue = ("value" in newUses);
+                const hasMax = ("max" in newUses);
+                if (!hasValue && !hasMax) return;
 
-                // Determine if update was initiated by item being rolled
-                const itemRolled = await checkSecondHook("createChatMessage");
-                if (!itemRolled) {
+                // Ignore any updates that attempt to change values between zero <--> null.
+                const isValueUnchanged = (!hasValue || (!newUses.value && !oldUses.value));
+                const isMaxUnchanged = (!hasMax || (!newUses.max && !oldUses.max));
+                if (isValueUnchanged && isMaxUnchanged) return;
+
+                // Determine if update was initiated by item being rolled, or a rest
+                checkSecondHooks({ itemId: item.id }).then(async (didFire) => {
+                    if (didFire) return;
+
+                    hbsData.uses = {
+                        value: (hasValue ? newUses.value : oldUses.value) || 0,
+                        max: (hasMax ? newUses.max : oldUses.max) || 0
+                    };
+                    const content = await renderTemplate(FEAT_USES_TEMPLATE, hbsData);
+
                     await ChatMessage.create({
                         content,
-                        whisper
+                        whisper,
+                        flags: { [moduleName]: { feat: true } }
                     });
-                }
+                });
             }
 
-            if (isAttune && (data.data.attunement === 1 || data.data.attunement === 2)) {
-                const attuneStatus = data.data.attunement === 2 ? game.i18n.localize("characterMonitor.chatMessage.attunesTo") : game.i18n.localize("characterMonitor.chatMessage.breaksAttune");
-                const content = `
-                    <div class="cm-message cm-${data.data.attunement === 2 ? "on" : "off"}">
-                        <span style="padding-right: 5%">
-                            ${characterName} ${attuneStatus}: ${itemName}
-                        </span>
-                    </div>
-                `;
-
-                await ChatMessage.create({
-                    content,
-                    whisper
+            if (isAttune && (CONFIG.DND5E.attunementTypes.NONE !== data.data.attunement)) {
+                hbsData.attuned = (CONFIG.DND5E.attunementTypes.ATTUNED === data.data.attunement);
+                renderTemplate(ITEM_ATTUNE_TEMPLATE, hbsData).then(async (content) => {
+                    await ChatMessage.create({
+                        content,
+                        whisper,
+                        flags: { [moduleName]: { equip: hbsData.attuned } }
+                    });
                 });
             }
         });
 
-        Hooks.on("updateActor", async (actor, data, options, userID) => {
-            if (!game.user.isGM) return;
-
+        Hooks.on("preUpdateActor", async (actor, data, options, userID) => {
             const whisper = game.settings.get(moduleName, "showGMonly") ?
                 game.users.filter(u => u.isGM).map(u => u.id) : [];
-            const characterName = actor.name;
+
+            const hbsData = {
+                characterName: actor.name
+            }
 
             // Spell Slot changes
             if (game.settings.get(moduleName, "monitorSpellSlots") && ("spells" in (data.data || {}))) {
-                // Determine if update was initiated by item being rolled
-                const itemRolled = await checkSecondHook("createChatMessage");
-                if (itemRolled) return;
+                for (const [spellLevel, newSpellData] of Object.entries(data.data.spells)) {
+                    const oldSpellData = actor.data.data.spells[spellLevel];
+                    const hasValue = ("value" in newSpellData);
+                    const hasMax = ("override" in newSpellData) || ("max" in newSpellData);
+                    if (!hasValue && !hasMax) return;
 
-                for (const spellLevel of Object.keys(data.data.spells)) {
+                    const newMax = newSpellData.override ?? newSpellData.max;
+
+                    // Ignore any updates that attempt to change values between zero <--> null.
+                    const isValueUnchanged = (!hasValue || (!newSpellData.value && !oldSpellData.value));
+                    const isMaxUnchanged = (!hasMax || (!newMax && !oldSpellData.max));
+                    if (isValueUnchanged && isMaxUnchanged) return;
+
                     const levelNum = parseInt(spellLevel.slice(-1));
-                    const levelLabel = CONFIG.DND5E.spellLevels[levelNum];
-                    const content = `
-                        <div class="cm-message cm-slots">
-                            <span style="padding-right: 5%">
-                                ${characterName} | ${levelLabel} ${game.i18n.localize("characterMonitor.chatMessage.SpellSlots")}: ${actor.data.data.spells[spellLevel].value}/${actor.data.data.spells[spellLevel].max}
-                            </span>
-                        </div>
-                    `;
 
-                    await ChatMessage.create({
-                        content,
-                        whisper
+                    // Determine if update was initiated by item being rolled, or a rest.
+                    checkSecondHooks({ spellLevel: levelNum }).then(async (didFire) => {
+                        if (didFire) return;
+
+                        hbsData.spellSlot = {
+                            label: CONFIG.DND5E.spellLevels[levelNum],
+                            value: (hasValue ? newSpellData.value : oldSpellData.value) || 0,
+                            max: (newMax ?? oldSpellData.max) || 0
+                        }
+
+                        const content = await renderTemplate(SPELL_SLOTS_TEMPLATE, hbsData);
+
+                        await ChatMessage.create({
+                            content,
+                            whisper,
+                            flags: { [moduleName]: { slot: levelNum } }
+                        });
                     });
                 }
             }
 
             // Resource Changes
             if (game.settings.get(moduleName, "monitorResources") && ("resources" in (data.data || {}))) {
-                const isRest = checkSecondHook("restCompleted");
-                const itemRolled = checkSecondHook("createChatMessage");
-                const res = await Promise.all([isRest, itemRolled]);
-                if (res.includes(true)) return;
+                for (const [resource, newResourceData] of Object.entries(data.data.resources)) {
+                    const hasValue = ("value" in newResourceData);
+                    const hasMax = ("max" in newResourceData);
+                    if (!hasValue && !hasMax) continue;
 
-                for (const resource of Object.keys(data.data.resources)) {
-                    if (!(("value" in data.data.resources[resource]) || ("max" in data.data.resources[resource]))) continue;
+                    const oldResourceData = actor.data.data.resources[resource];
 
-                    const content = `
-                        <div class="cm-message cm-feats">
-                            <span style="padding-right: 5%">
-                                ${characterName} | ${actor.data.data.resources[resource].label || resource}: ${actor.data.data.resources[resource].value} / ${actor.data.data.resources[resource].max || "0"}
-                            </span>
-                        </div>
-                    `;
+                    // Ignore any updates that attempt to change values between zero <--> null.
+                    const isValueUnchanged = (!hasValue || (!newResourceData.value && !oldResourceData.value));
+                    const isMaxUnchanged = (!hasMax || (!newResourceData.max && !oldResourceData.max));
+                    if (isValueUnchanged && isMaxUnchanged) continue;
 
-                    await ChatMessage.create({
-                        content,
-                        whisper
+                    // Determine if update was initiated by item being rolled, or a rest.
+                    checkSecondHooks({ resourceName: resource }).then(async (didFire) => {
+                        if (didFire) return;
+
+                        hbsData.resource = {
+                            label: oldResourceData.label || resource,
+                            value: (hasValue ? newResourceData.value : oldResourceData.value) || 0,
+                            max: (hasMax ? newResourceData.max : oldResourceData.max) || 0
+                        };
+                        const content = await renderTemplate(RESOURCE_USES_TEMPLATE, hbsData);
+
+                        await ChatMessage.create({
+                            content,
+                            whisper,
+                            flags: { [moduleName]: { feat: true } }
+                        });
                     });
                 }
             }
@@ -423,18 +491,51 @@ class CharacterMonitorColorMenu extends FormApplication {
     }
 }
 
-
-async function checkSecondHook(secondHookName, delay = 500) {
+async function checkSecondHook(secondHookName, { itemId, spellLevel, resourceName, delay = 500 } = {}) {
     let secondHookCalled = false;
-    const hookID = Hooks.once(secondHookName, () => {
-        secondHookCalled = true;
+
+    const hookID = Hooks.on(secondHookName, (...args) => {
+        if (secondHookName === "preCreateChatMessage") {
+            const html = $($.parseHTML(args[1].content));
+
+            if (itemId) {
+                secondHookCalled ||= html.is(`[data-item-id="${itemId}"]`);
+
+            } else if (spellLevel) {
+                secondHookCalled ||= html.is(`[data-spell-level="${spellLevel}"]`);
+
+            } else if (resourceName) {
+                const actor = game.actors.get(args[1].speaker.actor);
+                if (!actor) return;
+
+                const item = actor.items.get(html.attr("data-item-id"));
+                if (!item) return;
+
+                secondHookCalled ||= (item.data.data.consume.target === `resources.${resourceName}.value`);
+
+            } else {
+                secondHookCalled = true;
+            }
+        } else {
+            secondHookCalled = true;
+        }
     });
 
     await new Promise(resolve => {
         setTimeout(resolve, delay);
     });
 
-    if (!secondHookCalled) Hooks.off(secondHookName, hookID);
+    Hooks.off(secondHookName, hookID);
 
     return secondHookCalled;
+}
+
+async function checkSecondHooks(params = {}) {
+    const promises = [
+        checkSecondHook("preCreateChatMessage", params),
+        checkSecondHook("restCompleted", params)
+    ];
+
+    const res = await Promise.all(promises);
+    return res.includes(true);
 }
