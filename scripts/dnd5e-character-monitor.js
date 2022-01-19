@@ -8,6 +8,7 @@ const SPELL_PREPARE_TEMPLATE = `${TEMPLATE_DIR}/spellPrepare.hbs`;
 const FEAT_USES_TEMPLATE = `${TEMPLATE_DIR}/featUses.hbs`;
 const SPELL_SLOTS_TEMPLATE = `${TEMPLATE_DIR}/spellSlots.hbs`;
 const RESOURCE_USES_TEMPLATE = `${TEMPLATE_DIR}/resourceUses.hbs`;
+const CURRENCY_TEMPLATE = `${TEMPLATE_DIR}/currency.hbs`;
 
 Hooks.once("setup", async () => {
     console.log(`${moduleName} | Initializing`);
@@ -52,7 +53,8 @@ class CharacterMonitor {
                 on: "#06a406",
                 off: "#c50d19",
                 slots: "#b042f5",
-                feats: "#425af5"
+                feats: "#425af5",
+                currency: "#b59b3c"
             },
             config: false,
             onChange: debounce(CharacterMonitor.setCssVariables, 500)
@@ -110,6 +112,15 @@ class CharacterMonitor {
             scope: "world",
             type: Boolean,
             default: true,
+            config: true
+        });
+
+        game.settings.register(moduleName, "monitorCurrency", {
+            name: game.i18n.localize("characterMonitor.settings.monitorCurrency.name"),
+            hint: game.i18n.localize("characterMonitor.settings.monitorCurrency.hint"),
+            scope: "world",
+            type: Boolean,
+            default: false,
             config: true
         });
 
@@ -203,6 +214,7 @@ class CharacterMonitor {
         root.style.setProperty('--dnd5e-cm-off', colors.off);
         root.style.setProperty('--dnd5e-cm-feats', colors.feats);
         root.style.setProperty('--dnd5e-cm-slots', colors.slots);
+        root.style.setProperty('--dnd5e-cm-currency', colors.currency);
 
         const showGmOnly = game.settings.get(moduleName, "showGMonly");
         const allowPlayerView = game.settings.get(moduleName, "allowPlayerView");
@@ -242,6 +254,8 @@ class CharacterMonitor {
                 html.addClass("dnd5e-cm-message dnd5e-cm-feats");
             } else if ("slot" in flags) {
                 html.addClass("dnd5e-cm-message dnd5e-cm-slots");
+            } else if ("currency" in flags) {
+                html.addClass("dnd5e-cm-message dnd5e-cm-currency");
             }
 
             // Optionally add trash icon
@@ -359,7 +373,7 @@ class CharacterMonitor {
 
             const hbsData = {
                 characterName: actor.name
-            }
+            };
 
             // Spell Slot changes
             if (game.settings.get(moduleName, "monitorSpellSlots") && ("spells" in (data.data || {}))) {
@@ -367,14 +381,14 @@ class CharacterMonitor {
                     const oldSpellData = actor.data.data.spells[spellLevel];
                     const hasValue = ("value" in newSpellData);
                     const hasMax = ("override" in newSpellData) || ("max" in newSpellData);
-                    if (!hasValue && !hasMax) return;
+                    if (!hasValue && !hasMax) continue;
 
                     const newMax = newSpellData.override ?? newSpellData.max;
 
                     // Ignore any updates that attempt to change values between zero <--> null.
                     const isValueUnchanged = (!hasValue || (!newSpellData.value && !oldSpellData.value));
                     const isMaxUnchanged = (!hasMax || (!newMax && !oldSpellData.max));
-                    if (isValueUnchanged && isMaxUnchanged) return;
+                    if (isValueUnchanged && isMaxUnchanged) continue;
 
                     const levelNum = parseInt(spellLevel.slice(-1));
 
@@ -399,7 +413,7 @@ class CharacterMonitor {
                 }
             }
 
-            // Resource Changes
+            // Resource changes
             if (game.settings.get(moduleName, "monitorResources") && ("resources" in (data.data || {}))) {
                 for (const [resource, newResourceData] of Object.entries(data.data.resources)) {
                     const hasValue = ("value" in newResourceData);
@@ -429,6 +443,29 @@ class CharacterMonitor {
                             whisper,
                             flags: { [moduleName]: { feat: true } }
                         });
+                    });
+                }
+            }
+            
+            // Currency changes
+            if (game.settings.get(moduleName, "monitorCurrency") && ("currency" in (data.data || {}))) {
+                for (const [currency, newValue] of Object.entries(data.data.currency)) {
+                    const oldValue = actor.data.data.currency[currency];
+
+                    // Ignore any updates that attempt to change values between zero <--> null.
+                    const isValueUnchanged = !newValue && !oldValue;
+                    if (isValueUnchanged) continue;
+
+                    hbsData.currency = {
+                        label: currency,
+                        value: newValue
+                    };
+                    const content = await renderTemplate(CURRENCY_TEMPLATE, hbsData);
+
+                    await ChatMessage.create({
+                        content,
+                        whisper,
+                        flags: { [moduleName]: { currency: true } }
                     });
                 }
             }
@@ -465,6 +502,10 @@ class CharacterMonitorColorMenu extends FormApplication {
             feats: {
                 color: settingsData.feats,
                 label: game.i18n.localize("DND5E.Features")
+            },
+            currency: {
+                color: settingsData.currency,
+                label: game.i18n.localize("DND5E.Currency")
             }
         };
 
@@ -483,6 +524,8 @@ class CharacterMonitorColorMenu extends FormApplication {
             html.find(`input[data-edit="slots"]`).val("#b042f5");
             html.find(`input[name="feats"]`).val("#425af5");
             html.find(`input[data-edit="feats"]`).val("#425af5");
+            html.find(`input[name="currency"]`).val("#b59b3c");
+            html.find(`input[data-edit="currency"]`).val("#b59b3c");
         });
     }
 

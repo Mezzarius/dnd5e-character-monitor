@@ -29,6 +29,10 @@
                 "name": "Monitor Resources",
                 "hint": "Tracks when a character changes resources values counts on their character sheet."
             },
+            "monitorCurrecny": {
+                "name": "Monitor Currnecy",
+                "hint": "Tracks when a character changes currency on their character sheet."
+            },
             "showGMonly": {
                 "name": "Display Character Monitor to GM Users only",
                 "hint": "Chat messages can be revealed to players using context menu."
