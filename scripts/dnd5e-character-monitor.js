@@ -258,7 +258,7 @@ class CharacterMonitor {
             //if (Object.keys(item.parent?.apps || {}).length === 0) return;
 
             // If item owner is not a PC, return // Potentially change this to be depenent on setting if NPCs should be monitored
-            if (item.parent.type !== "character") return;
+            if (item.parent?.type !== "character") return;
 
             // If Character Monitor disabled via control toggle, return
             if (!game.settings.get(moduleName, "cmToggle")) return;
