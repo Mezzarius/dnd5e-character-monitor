@@ -120,7 +120,7 @@ class CharacterMonitor {
             hint: game.i18n.localize("characterMonitor.settings.monitorCurrency.hint"),
             scope: "world",
             type: Boolean,
-            default: false,
+            default: true,
             config: true
         });
 
