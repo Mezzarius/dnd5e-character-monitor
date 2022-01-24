@@ -29,8 +29,8 @@
                 "name": "Monitor Resources",
                 "hint": "Tracks when a character changes resources values counts on their character sheet."
             },
-            "monitorCurrecny": {
-                "name": "Monitor Currnecy",
+            "monitorCurrency": {
+                "name": "Monitor Currency",
                 "hint": "Tracks when a character changes currency on their character sheet."
             },
             "showGMonly": {

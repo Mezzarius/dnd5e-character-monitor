@@ -368,6 +368,7 @@ class CharacterMonitor {
         });
 
         Hooks.on("preUpdateActor", async (actor, data, options, userID) => {
+            if (actor.type !== "character") return;
             const whisper = game.settings.get(moduleName, "showGMonly") ?
                 game.users.filter(u => u.isGM).map(u => u.id) : [];
 
