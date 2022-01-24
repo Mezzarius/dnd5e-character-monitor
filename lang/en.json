@@ -33,6 +33,14 @@
                 "name": "Monitor Currency",
                 "hint": "Tracks when a character changes currency on their character sheet."
             },
+            "monitorProficiency": {
+                "name": "Monitor Skill Proficiency",
+                "hint": "Tracks when a character changes skill proficiency."
+            },
+            "monitorAbility": {
+                "name": "Monitor Ability Scores",
+                "hint": "Tracks when a character changes ability scores."
+            },
             "showGMonly": {
                 "name": "Display Character Monitor to GM Users only",
                 "hint": "Chat messages can be revealed to players using context menu."

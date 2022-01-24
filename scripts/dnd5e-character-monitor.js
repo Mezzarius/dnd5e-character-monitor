@@ -9,6 +9,8 @@ const FEAT_USES_TEMPLATE = `${TEMPLATE_DIR}/featUses.hbs`;
 const SPELL_SLOTS_TEMPLATE = `${TEMPLATE_DIR}/spellSlots.hbs`;
 const RESOURCE_USES_TEMPLATE = `${TEMPLATE_DIR}/resourceUses.hbs`;
 const CURRENCY_TEMPLATE = `${TEMPLATE_DIR}/currency.hbs`;
+const PROFICIENCY_TEMPLATE = `${TEMPLATE_DIR}/proficiency.hbs`;
+const ABILITY_TEMPLATE = `${TEMPLATE_DIR}/ability.hbs`;
 
 Hooks.once("setup", async () => {
     console.log(`${moduleName} | Initializing`);
@@ -54,7 +56,9 @@ class CharacterMonitor {
                 off: "#c50d19",
                 slots: "#b042f5",
                 feats: "#425af5",
-                currency: "#b59b3c"
+                currency: "#b59b3c",
+                proficiency: "#37908a",
+                ability: "#37908a"
             },
             config: false,
             onChange: debounce(CharacterMonitor.setCssVariables, 500)
@@ -118,6 +122,24 @@ class CharacterMonitor {
         game.settings.register(moduleName, "monitorCurrency", {
             name: game.i18n.localize("characterMonitor.settings.monitorCurrency.name"),
             hint: game.i18n.localize("characterMonitor.settings.monitorCurrency.hint"),
+            scope: "world",
+            type: Boolean,
+            default: true,
+            config: true
+        });
+
+        game.settings.register(moduleName, "monitorProficiency", {
+            name: game.i18n.localize("characterMonitor.settings.monitorProficiency.name"),
+            hint: game.i18n.localize("characterMonitor.settings.monitorProficiency.hint"),
+            scope: "world",
+            type: Boolean,
+            default: true,
+            config: true
+        });
+
+        game.settings.register(moduleName, "monitorAbility", {
+            name: game.i18n.localize("characterMonitor.settings.monitorAbility.name"),
+            hint: game.i18n.localize("characterMonitor.settings.monitorAbility.hint"),
             scope: "world",
             type: Boolean,
             default: true,
@@ -215,6 +237,8 @@ class CharacterMonitor {
         root.style.setProperty('--dnd5e-cm-feats', colors.feats);
         root.style.setProperty('--dnd5e-cm-slots', colors.slots);
         root.style.setProperty('--dnd5e-cm-currency', colors.currency);
+        root.style.setProperty('--dnd5e-cm-proficiency', colors.proficiency);
+        root.style.setProperty('--dnd5e-cm-ability', colors.ability);
 
         const showGmOnly = game.settings.get(moduleName, "showGMonly");
         const allowPlayerView = game.settings.get(moduleName, "allowPlayerView");
@@ -256,6 +280,10 @@ class CharacterMonitor {
                 html.addClass("dnd5e-cm-message dnd5e-cm-slots");
             } else if ("currency" in flags) {
                 html.addClass("dnd5e-cm-message dnd5e-cm-currency");
+            } else if ("proficiency" in flags) {
+                html.addClass("dnd5e-cm-message dnd5e-cm-proficiency");
+            } else if ("ability" in flags) {
+                html.addClass("dnd5e-cm-message dnd5e-cm-ability");
             }
 
             // Optionally add trash icon
@@ -369,6 +397,7 @@ class CharacterMonitor {
 
         Hooks.on("preUpdateActor", async (actor, data, options, userID) => {
             if (actor.type !== "character") return;
+
             const whisper = game.settings.get(moduleName, "showGMonly") ?
                 game.users.filter(u => u.isGM).map(u => u.id) : [];
 
@@ -469,6 +498,46 @@ class CharacterMonitor {
                     });
                 }
             }
+
+            // Proficiency changes
+            if (game.settings.get(moduleName, "monitorProficiency") && ("skills" in (data.data || {}))) {
+                for (const [skl, changes] of Object.entries(data.data.skills)) {
+                    if (!("value" in changes)) continue;
+                    if (typeof changes.value !== "number") continue;
+
+                    hbsData.proficiency = {
+                        label: CONFIG.DND5E.skills[skl],
+                        value: CONFIG.DND5E.proficiencyLevels[changes.value]
+                    };
+                    const content = await renderTemplate(PROFICIENCY_TEMPLATE, hbsData);
+
+                    await ChatMessage.create({
+                        content,
+                        whisper,
+                        flags: { [moduleName]: { proficiency: true } }
+                    });
+                }
+            }
+
+            // Ability changes
+            if (game.settings.get(moduleName, "monitorAbility") && ("abilities" in (data.data || {}))) {
+                for (const [abl, changes] of Object.entries(data.data.abilities)) {
+                    if (!("value" in changes)) continue;
+                    if (typeof changes.value !== "number") continue;
+
+                    hbsData.ability = {
+                        label: CONFIG.DND5E.abilities[abl],
+                        value: changes.value
+                    };
+                    const content = await renderTemplate(ABILITY_TEMPLATE, hbsData);
+
+                    await ChatMessage.create({
+                        content,
+                        whisper,
+                        flags: { [moduleName]: { ability: true } }
+                    });
+                }
+            }
         });
     }
 
@@ -506,6 +575,14 @@ class CharacterMonitorColorMenu extends FormApplication {
             currency: {
                 color: settingsData.currency,
                 label: game.i18n.localize("DND5E.Currency")
+            },
+            proficiency: {
+                color: settingsData.proficiency,
+                label: game.i18n.localize("DND5E.Proficiency")
+            },
+            ability: {
+                color: settingsData.ability,
+                label: game.i18n.localize("DND5E.Ability")
             }
         };
 
@@ -526,6 +603,10 @@ class CharacterMonitorColorMenu extends FormApplication {
             html.find(`input[data-edit="feats"]`).val("#425af5");
             html.find(`input[name="currency"]`).val("#b59b3c");
             html.find(`input[data-edit="currency"]`).val("#b59b3c");
+            html.find(`input[name="proficiency"]`).val("#37908a");
+            html.find(`input[data-edit="proficiency"]`).val("#37908a");
+            html.find(`input[name="ability"]`).val("#37908a");
+            html.find(`input[data-edit="ability"]`).val("#37908a");
         });
     }
 
