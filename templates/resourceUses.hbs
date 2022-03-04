@@ -1,5 +1,5 @@
 <div class="dnd5e-cm-content">
     <span class="dnd5e-cm-text">
-        {{characterName}} | {{resource.label}}: {{resource.value}}/{{resource.max}}
+        {{characterName}} | {{resource.label}}: {{#if resource.old includeZero=true}}{{resource.old}}/{{resource.max}} -> {{/if}}{{resource.value}}/{{resource.max}}
     </span>
 </div>

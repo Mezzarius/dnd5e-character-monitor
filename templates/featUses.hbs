@@ -1,5 +1,5 @@
 <div class="dnd5e-cm-content">
     <span class="dnd5e-cm-text">
-        {{characterName}} | {{itemName}}: {{uses.value}}/{{uses.max}} {{localize "characterMonitor.chatMessage.uses"}}
+        {{characterName}} | {{itemName}}: {{#if uses.old includeZero=true}}{{uses.old}}/{{uses.max}} -> {{/if}}{{uses.value}}/{{uses.max}} {{#unless uses.old includeZero=true}}{{localize "characterMonitor.chatMessage.uses"}}{{/unless}}
     </span>
 </div>

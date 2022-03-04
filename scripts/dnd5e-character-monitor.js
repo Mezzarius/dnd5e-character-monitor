@@ -191,6 +191,15 @@ class CharacterMonitor {
             onChange: () => setTimeout(() => window.location.reload(), 500)
         });
 
+        game.settings.register(moduleName, "showPrevious", {
+            name: "Show Previous Values",
+            hint: "",
+            scope: "world",
+            type: Boolean,
+            default: false,
+            config: true
+
+        });
 
         game.settings.register(moduleName, "cmToggle", {
             name: "Toggle Character Monitor",
@@ -373,6 +382,8 @@ class CharacterMonitor {
                         value: (hasValue ? newUses.value : oldUses.value) || 0,
                         max: (hasMax ? newUses.max : oldUses.max) || 0
                     };
+                    if (game.settings.get(moduleName, "showPrevious")) hbsData.uses.old = oldUses.value;
+                    console.log(hbsData)
                     const content = await renderTemplate(FEAT_USES_TEMPLATE, hbsData);
 
                     await ChatMessage.create({
@@ -431,7 +442,7 @@ class CharacterMonitor {
                             value: (hasValue ? newSpellData.value : oldSpellData.value) || 0,
                             max: (newMax ?? oldSpellData.max) || 0
                         }
-
+                        if (game.settings.get(moduleName, "showPrevious")) hbsData.spellSlot.old = oldSpellData.value;
                         const content = await renderTemplate(SPELL_SLOTS_TEMPLATE, hbsData);
 
                         await ChatMessage.create({
@@ -466,6 +477,7 @@ class CharacterMonitor {
                             value: (hasValue ? newResourceData.value : oldResourceData.value) || 0,
                             max: (hasMax ? newResourceData.max : oldResourceData.max) || 0
                         };
+                        if (game.settings.get(moduleName, "showPrevious")) hbsData.resource.old = oldResourceData.value;
                         const content = await renderTemplate(RESOURCE_USES_TEMPLATE, hbsData);
 
                         await ChatMessage.create({
@@ -489,6 +501,7 @@ class CharacterMonitor {
                         label: currency,
                         value: newValue
                     };
+                    if (game.settings.get(moduleName, "showPrevious")) hbsData.currency.old = oldValue;
                     const content = await renderTemplate(CURRENCY_TEMPLATE, hbsData);
 
                     await ChatMessage.create({
