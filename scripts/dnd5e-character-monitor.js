@@ -493,7 +493,7 @@ class CharacterMonitor {
             // Currency changes
             if (game.settings.get(moduleName, "monitorCurrency") && ("currency" in (data.data || {}))) {
                 for (const [currency, newValue] of Object.entries(data.data.currency)) {
-                    //const oldValue = actor.data.data.currency[currency];
+                    const oldValue = actor.data.data.currency[currency];
 
                     // Ignore any updates that attempt to change values between zero <--> null.;
                     if (newValue === null) continue;
