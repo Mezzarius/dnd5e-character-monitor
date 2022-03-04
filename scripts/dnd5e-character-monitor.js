@@ -553,6 +553,43 @@ class CharacterMonitor {
                 }
             }
         });
+
+        // Party Inventory compatibility
+        if (game.modules.get("party-inventory")?.active) {
+            Hooks.on("preUpdateSetting", async (setting, data, options, userID) => {
+                const whisper = game.settings.get(moduleName, "showGMonly") ?
+                    game.users.filter(u => u.isGM).map(u => u.id) : [];
+
+                // Currency changes
+                if (setting.data.key === "party-inventory.currency" && game.settings.get(moduleName, "monitorCurrency")) {
+                    if (game.user.id !== game.users.find(u => u.active && u.isGM).id) return;
+
+                    const previousCurrency = game.settings.get("party-inventory", "currency");
+                    const newCurrency = JSON.parse(data.value);
+                    const changes = {};
+                    for (const xp of Object.keys(previousCurrency)) {
+                        if (previousCurrency[xp] !== newCurrency[xp]) changes[xp] = { old: previousCurrency[xp], new: newCurrency[xp] };
+                    }
+
+                    for (const xp of Object.keys(changes)) {
+                        const hbsData = {
+                            characterName: "Party Inventory",
+                            currency: {
+                                value: changes[xp].new,
+                                label: xp
+                            }
+                        };
+                        if (game.settings.get(moduleName, "showPrevious")) hbsData.currency.old = changes[xp].old;
+                        const content = await renderTemplate(CURRENCY_TEMPLATE, hbsData);
+                        await ChatMessage.create({
+                            content,
+                            whisper,
+                            flags: { [moduleName]: { currency: true } }
+                        });    
+                    }
+                }
+            });
+        }
     }
 
 }
