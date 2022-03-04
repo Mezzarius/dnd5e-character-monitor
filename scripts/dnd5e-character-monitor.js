@@ -406,6 +406,7 @@ class CharacterMonitor {
             }
         });
 
+        // Spell Slot, Resource, Currency, Proficiency, Ability changes
         Hooks.on("preUpdateActor", async (actor, data, options, userID) => {
             if (actor.type !== "character") return;
 
