@@ -1,7 +1,4 @@
 const moduleName = "dnd5e-character-monitor";
-asdfasdfasdfsd
-
-
 // Setting CONSTS
 let trashIconSetting;
 const TEMPLATE_DIR = `modules/${moduleName}/templates`
