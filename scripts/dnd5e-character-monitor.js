@@ -539,10 +539,13 @@ class CharacterMonitor {
                     if (!("value" in changes)) continue;
                     if (typeof changes.value !== "number") continue;
 
+                    const oldValue = actor.data.data.abilities[abl].value;
+
                     hbsData.ability = {
                         label: CONFIG.DND5E.abilities[abl],
                         value: changes.value
                     };
+                    if (game.settings.get(moduleName, "showPrevious")) hbsData.ability.old = oldValue;
                     const content = await renderTemplate(ABILITY_TEMPLATE, hbsData);
 
                     await ChatMessage.create({
