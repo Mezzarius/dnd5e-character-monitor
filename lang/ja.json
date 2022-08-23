@@ -1,0 +1,79 @@
+{
+    "characterMonitor": {
+        "settings": {
+            "cmColorsMenu": {
+                "name": "キャラクターモニターの色をカスタマイズする",
+                "label": "カスタマイズ"
+            },
+            "monitorEquip": {
+                "name": "装備モニター",
+                "hint": "キャラクターの装備状態を追跡する"
+            },
+            "monitorAttune": {
+                "name": "同調モニター",
+                "hint": "キャラクターの装備に対する同調状態を追跡する"
+            },
+            "monitorSpellPrep": {
+                "name": "呪文準備状態モニター",
+                "hint": "キャラクターの呪文準備状態を追跡する"
+            },
+            "monitorSpellSlots": {
+                "name": "呪文スロットモニター",
+                "hint": "キャラクターの呪文スロットを追跡する"
+            },
+            "monitorFeats": {
+                "name": "特徴モニター",
+                "hint": "キャラクターの特徴の使用回数を追跡する"
+            },
+            "monitorResources": {
+                "name": "リソースモニター",
+                "hint": "キャラクターのリソースの数を追跡する"
+            },
+            "monitorCurrency": {
+                "name": "通貨モニター",
+                "hint": "キャラクターの所持している金を追跡する"
+            },
+            "monitorProficiency": {
+                "name": "技能習熟モニター",
+                "hint": "キャラクターの技能習熟を追跡する"
+            },
+            "monitorAbility": {
+                "name": "能力値モニター",
+                "hint": "キャラクターの能力値を追跡する"
+            },
+            "showGMonly": {
+                "name": "キャラクターのモニターをGMにのみ表示する",
+                "hint": "コンテキストメニューを用いてチャットメッセージをプレイヤーに表示させる"
+            },
+            "allowPlayerView": {
+                "name": "プレイヤーに、個々人用のメッセージを表示させる",
+                "hint": "GMのみ表示される状態の時にこれをオンにすると、プレイヤーに、その人向けのメッセージを表示させる"
+            },
+            "showToggle": {
+                "name": "キャラクターモニターのトグルボタンを表示させる",
+                "hint": "トークンツールバーのトグルボタンをオフにすることで、一時的にキャラクターモニターを非表示にする。このトグルボタンはGMにのみ表示される"
+            },
+            "trashIcon": {
+                "name": "チャットメッセージの体力表示をオンにする"
+            }
+        },
+        "control": {
+            "title": "キャラクターモニタートグル"
+        },
+        "chatMessage": {
+            "equipped": "装備",
+            "unequipped": "非装備",
+            "prepared": "準備済み",
+            "unprepared": "準備解除",
+            "aSpell": "呪文",
+            "uses": "使用済み",
+            "attunesTo": "同調",
+            "breaksAttune": "同調解除",
+            "SpellSlots": "呪文スロット"
+        },
+        "colorMenu": {
+            "on": "装備・準備・同調",
+            "off": "装備解除・準備解除・同調解除"
+        }
+    }
+}
