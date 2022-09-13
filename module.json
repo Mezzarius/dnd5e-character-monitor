@@ -1,20 +1,36 @@
 {
-    "name": "dnd5e-character-monitor",
+    "id": "dnd5e-character-monitor",
     "title": "D&D5e Character Monitor",
     "description": "Log an alert in chat when certain changes to an actor are made.",
     "version": "1.0.0",
-    "author": "enso#0361",
-    "sytem": [
-        "dnd5e"
+    "authors": [
+        {
+            "name": "enso",
+            "discord": "enso#0361"
+        }
     ],
+    "compatibility": {
+        "minimum": "10",
+        "verified": "10"
+    },
+    "relationships": {
+        "systems": [
+            {
+                "id": "dnd5e",
+                "type": "system",
+                "compatibility": {
+                    "minimum": "2.0.0",
+                    "verified": "2.0.0"
+                }
+            }
+        ]
+    },
     "esmodules": [
         "./scripts/dnd5e-character-monitor.js"
     ],
     "styles": [
         "./styles/dnd5e-character-monitor.css"
     ],
-    "minimumCoreVersion": "0.8.1",
-    "compatibleCoreVersion": "9",
     "languages": [
         {
             "lang": "en",
