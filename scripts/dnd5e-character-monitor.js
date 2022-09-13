@@ -321,10 +321,10 @@ class CharacterMonitor {
             }
 
             // Parse changes
-            const isEquip = monitoredChangesDict["monitorEquip"] && (item.type === "equipment" || item.type === "weapon") && "equipped" in (data.data || {});
-            const isSpellPrep = monitoredChangesDict["monitorSpellPrep"] && item.type === "spell" && "prepared" in (data?.data?.preparation || {});
-            const isFeat = monitoredChangesDict["monitorFeats"] && item.type === "feat" && ("value" in (data?.data?.uses || {}) || "max" in (data?.data?.uses || {}));
-            const isAttune = monitoredChangesDict["monitorAttune"] && (item.type === "equipment" || item.type === "weapon") && "attunement" in (data.data || {});
+            const isEquip = monitoredChangesDict["monitorEquip"] && (item.type === "equipment" || item.type === "weapon") && "equipped" in (data.system || {});
+            const isSpellPrep = monitoredChangesDict["monitorSpellPrep"] && item.type === "spell" && "prepared" in (data?.system?.preparation || {});
+            const isFeat = monitoredChangesDict["monitorFeats"] && item.type === "feat" && ("value" in (data?.system?.uses || {}) || "max" in (data?.system?.uses || {}));
+            const isAttune = monitoredChangesDict["monitorAttune"] && (item.type === "equipment" || item.type === "weapon") && "attunement" in (data.system || {});
 
             if (!(isEquip || isSpellPrep || isFeat || isAttune)) return;
 
@@ -341,30 +341,30 @@ class CharacterMonitor {
             };
 
             if (isEquip) {
-                hbsData.equipped = data.data.equipped;
+                hbsData.equipped = data.system.equipped;
                 renderTemplate(ITEM_EQUIP_TEMPLATE, hbsData).then(async (content) => {
                     await ChatMessage.create({
                         content,
                         whisper,
-                        flags: { [moduleName]: { equip: data.data.equipped } }
+                        flags: { [moduleName]: { equip: data.system.equipped } }
                     });
                 });
             }
 
             if (isSpellPrep) {
-                hbsData.prepared = data.data.preparation.prepared;
+                hbsData.prepared = data.system.preparation.prepared;
                 renderTemplate(SPELL_PREPARE_TEMPLATE, hbsData).then(async (content) => {
                     await ChatMessage.create({
                         content,
                         whisper,
-                        flags: { [moduleName]: { equip: data.data.preparation.prepared } }
+                        flags: { [moduleName]: { equip: data.system.preparation.prepared } }
                     });
                 });
             }
 
             if (isFeat) {
-                const newUses = data.data.uses;
-                const oldUses = item.data.data.uses;
+                const newUses = data.system.uses;
+                const oldUses = item.system.uses;
                 const hasValue = ("value" in newUses);
                 const hasMax = ("max" in newUses);
                 if (!hasValue && !hasMax) return;
@@ -383,7 +383,6 @@ class CharacterMonitor {
                         max: (hasMax ? newUses.max : oldUses.max) || 0
                     };
                     if (game.settings.get(moduleName, "showPrevious")) hbsData.uses.old = oldUses.value;
-                    console.log(hbsData)
                     const content = await renderTemplate(FEAT_USES_TEMPLATE, hbsData);
 
                     await ChatMessage.create({
@@ -394,8 +393,8 @@ class CharacterMonitor {
                 });
             }
 
-            if (isAttune && (CONFIG.DND5E.attunementTypes.NONE !== data.data.attunement)) {
-                hbsData.attuned = (CONFIG.DND5E.attunementTypes.ATTUNED === data.data.attunement);
+            if (isAttune && (CONFIG.DND5E.attunementTypes.NONE !== data.system.attunement)) {
+                hbsData.attuned = (CONFIG.DND5E.attunementTypes.ATTUNED === data.system.attunement);
                 renderTemplate(ITEM_ATTUNE_TEMPLATE, hbsData).then(async (content) => {
                     await ChatMessage.create({
                         content,
@@ -418,9 +417,9 @@ class CharacterMonitor {
             };
 
             // Spell Slot changes
-            if (game.settings.get(moduleName, "monitorSpellSlots") && ("spells" in (data.data || {}))) {
-                for (const [spellLevel, newSpellData] of Object.entries(data.data.spells)) {
-                    const oldSpellData = actor.data.data.spells[spellLevel];
+            if (game.settings.get(moduleName, "monitorSpellSlots") && ("spells" in (data.system || {}))) {
+                for (const [spellLevel, newSpellData] of Object.entries(data.system.spells)) {
+                    const oldSpellData = actor.system.spells[spellLevel];
                     const hasValue = ("value" in newSpellData);
                     const hasMax = ("override" in newSpellData) || ("max" in newSpellData);
                     if (!hasValue && !hasMax) continue;
@@ -456,13 +455,13 @@ class CharacterMonitor {
             }
 
             // Resource changes
-            if (game.settings.get(moduleName, "monitorResources") && ("resources" in (data.data || {}))) {
-                for (const [resource, newResourceData] of Object.entries(data.data.resources)) {
+            if (game.settings.get(moduleName, "monitorResources") && ("resources" in (data.system || {}))) {
+                for (const [resource, newResourceData] of Object.entries(data.system.resources)) {
                     const hasValue = ("value" in newResourceData);
                     const hasMax = ("max" in newResourceData);
                     if (!hasValue && !hasMax) continue;
 
-                    const oldResourceData = actor.data.data.resources[resource];
+                    const oldResourceData = actor.system.resources[resource];
 
                     // Ignore any updates that attempt to change values between zero <--> null.
                     const isValueUnchanged = (!hasValue || (!newResourceData.value && !oldResourceData.value));
@@ -491,9 +490,9 @@ class CharacterMonitor {
             }
             
             // Currency changes
-            if (game.settings.get(moduleName, "monitorCurrency") && ("currency" in (data.data || {}))) {
-                for (const [currency, newValue] of Object.entries(data.data.currency)) {
-                    const oldValue = actor.data.data.currency[currency];
+            if (game.settings.get(moduleName, "monitorCurrency") && ("currency" in (data.system || {}))) {
+                for (const [currency, newValue] of Object.entries(data.system.currency)) {
+                    const oldValue = actor.system.currency[currency];
 
                     // Ignore any updates that attempt to change values between zero <--> null.;
                     if (newValue === null) continue;
@@ -514,8 +513,8 @@ class CharacterMonitor {
             }
 
             // Proficiency changes
-            if (game.settings.get(moduleName, "monitorProficiency") && ("skills" in (data.data || {}))) {
-                for (const [skl, changes] of Object.entries(data.data.skills)) {
+            if (game.settings.get(moduleName, "monitorProficiency") && ("skills" in (data.system || {}))) {
+                for (const [skl, changes] of Object.entries(data.system.skills)) {
                     if (!("value" in changes)) continue;
                     if (typeof changes.value !== "number") continue;
 
@@ -534,12 +533,12 @@ class CharacterMonitor {
             }
 
             // Ability changes
-            if (game.settings.get(moduleName, "monitorAbility") && ("abilities" in (data.data || {}))) {
-                for (const [abl, changes] of Object.entries(data.data.abilities)) {
+            if (game.settings.get(moduleName, "monitorAbility") && ("abilities" in (data.system || {}))) {
+                for (const [abl, changes] of Object.entries(data.system.abilities)) {
                     if (!("value" in changes)) continue;
                     if (typeof changes.value !== "number") continue;
 
-                    const oldValue = actor.data.data.abilities[abl].value;
+                    const oldValue = actor.system.abilities[abl].value;
 
                     hbsData.ability = {
                         label: CONFIG.DND5E.abilities[abl],
@@ -689,7 +688,7 @@ async function checkSecondHook(secondHookName, { itemId, spellLevel, resourceNam
                 const item = actor.items.get(html.attr("data-item-id"));
                 if (!item) return;
 
-                secondHookCalled ||= (item.data.data.consume.target === `resources.${resourceName}.value`);
+                secondHookCalled ||= (item.system.consume.target === `resources.${resourceName}.value`);
 
             } else {
                 secondHookCalled = true;
