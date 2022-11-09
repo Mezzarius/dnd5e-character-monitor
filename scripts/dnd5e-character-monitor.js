@@ -332,7 +332,7 @@ class CharacterMonitor {
             // Players may or may not actually see the message depending on the allowPlayerView setting.
             // Potentially change this to be depenent on setting if NPCs should be monitored (See health-monitor.js line 213)
             const whisper = (game.settings.get(moduleName, "showGMonly") ?
-                game.users.filter(u => item.parent.testUserPermission(u, CONST.ENTITY_PERMISSIONS.OWNER)).map(u => u.id) : null);
+                game.users.filter(u => item.parent.testUserPermission(u, CONST.DOCUMENT_PERMISSION_LEVELS.OWNER)).map(u => u.id) : null);
 
             // Prepare common content for handlebars templates
             const hbsData = {
