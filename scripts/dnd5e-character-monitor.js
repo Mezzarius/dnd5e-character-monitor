@@ -496,7 +496,7 @@ class CharacterMonitor {
                     const oldValue = actor.system.currency[currency];
 
                     // Ignore any updates that attempt to change values between zero <--> null.;
-                    if (newValue === null) continue;
+                    if (newValue === null || newValue == oldValue) continue;
 
                     hbsData.currency = {
                         label: currency,
