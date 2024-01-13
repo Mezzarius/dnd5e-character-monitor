@@ -12,6 +12,9 @@ const RESOURCE_USES_TEMPLATE = `${TEMPLATE_DIR}/resourceUses.hbs`;
 const CURRENCY_TEMPLATE = `${TEMPLATE_DIR}/currency.hbs`;
 const PROFICIENCY_TEMPLATE = `${TEMPLATE_DIR}/proficiency.hbs`;
 const ABILITY_TEMPLATE = `${TEMPLATE_DIR}/ability.hbs`;
+const EFFECT_ENABLED_TEMPLATE = `${TEMPLATE_DIR}/effectEnabled.hbs`;
+const EFFECT_DURATION_TEMPLATE = `${TEMPLATE_DIR}/effectDuration.hbs`;
+const EFFECT_EFFECTS_TEMPLATE = `${TEMPLATE_DIR}/effectEffects.hbs`;
 
 Hooks.once("setup", async () => {
     console.log(`${moduleName} | Initializing`);
@@ -23,7 +26,10 @@ Hooks.once("setup", async () => {
         SPELL_PREPARE_TEMPLATE, 
         FEAT_USES_TEMPLATE, 
         SPELL_SLOTS_TEMPLATE, 
-        RESOURCE_USES_TEMPLATE
+        RESOURCE_USES_TEMPLATE,
+        EFFECT_ENABLED_TEMPLATE,
+        EFFECT_DURATION_TEMPLATE,
+        EFFECT_EFFECTS_TEMPLATE
     ]);
 
     // Open module API
@@ -65,6 +71,7 @@ class CharacterMonitor {
                 off: "#c50d19",
                 slots: "#b042f5",
                 feats: "#425af5",
+                effects: "#c86400",
                 currency: "#b59b3c",
                 proficiency: "#37908a",
                 ability: "#37908a"
@@ -131,6 +138,15 @@ class CharacterMonitor {
         game.settings.register(moduleName, "monitorResources", {
             name: game.i18n.localize("characterMonitor.settings.monitorResources.name"),
             hint: game.i18n.localize("characterMonitor.settings.monitorResources.hint"),
+            scope: "world",
+            type: Boolean,
+            default: true,
+            config: true
+        });
+
+        game.settings.register(moduleName, "monitorActiveEffects", {
+            name: game.i18n.localize("characterMonitor.settings.monitorActiveEffects.name"),
+            hint: game.i18n.localize("characterMonitor.settings.monitorActiveEffects.hint"),
             scope: "world",
             type: Boolean,
             default: true,
@@ -263,6 +279,7 @@ class CharacterMonitor {
         root.style.setProperty('--dnd5e-cm-off', colors.off);
         root.style.setProperty('--dnd5e-cm-feats', colors.feats);
         root.style.setProperty('--dnd5e-cm-slots', colors.slots);
+        root.style.setProperty('--dnd5e-cm-effects', colors.effects);
         root.style.setProperty('--dnd5e-cm-currency', colors.currency);
         root.style.setProperty('--dnd5e-cm-proficiency', colors.proficiency);
         root.style.setProperty('--dnd5e-cm-ability', colors.ability);
@@ -305,6 +322,8 @@ class CharacterMonitor {
                 html.addClass("dnd5e-cm-message dnd5e-cm-feats");
             } else if ("slot" in flags) {
                 html.addClass("dnd5e-cm-message dnd5e-cm-slots");
+            } else if ("effects" in flags) {
+                html.addClass("dnd5e-cm-message dnd5e-cm-effects");
             } else if ("currency" in flags) {
                 html.addClass("dnd5e-cm-message dnd5e-cm-currency");
             } else if ("proficiency" in flags) {
@@ -599,6 +618,115 @@ class CharacterMonitor {
             }
         });
 
+        // Active Effect changes
+        Hooks.on("preUpdateActiveEffect", async (activeEffect, changes, options, userID) => {
+            if (!game.settings.get(moduleName, "monitorActiveEffects")) return;
+            
+            const actor = activeEffect.parent;
+            if (actor.type !== "character") return;
+
+            const whisper = game.settings.get(moduleName, "showGMonly") ?
+                game.users.filter(u => u.isGM).map(u => u.id) : [];
+
+            const hbsData = {
+                characterName: actor.name,
+                activeEffectName: activeEffect.name
+            };
+
+            // Parse changes
+            const isDisabled = "disabled" in (changes || {});
+            const isDuration = "duration" in (changes || {});
+            const isEffects = Object.values(changes).some(key => Array.isArray(key));
+  
+            // Enabled/Disabled change
+            if (isDisabled) {
+                hbsData.disabled = changes.disabled;
+                renderTemplate(EFFECT_ENABLED_TEMPLATE, hbsData).then(async (content) => {
+                    await ChatMessage.create({
+                        content,
+                        whisper,
+                        flags: { [moduleName]: { effects: changes.disabled } }
+                    });
+                });
+            }
+
+            // Duration change
+            if (isDuration) {
+                hbsData.duration = {};
+                for (let type in changes.duration) {
+                    // Excludes value changes from null to 0 and viceversa
+                    const newVal = changes.duration[type] === null ? 0 : changes.duration[type];
+                    const oldVal = activeEffect.duration[type] === null ? 0 : activeEffect.duration[type];
+                    if (newVal === oldVal) continue;
+                    
+                    hbsData.duration[type] = {
+                        label: game.i18n.localize(`characterMonitor.chatMessage.duration.${type}`),
+                        value: newVal
+                    }
+                    if (game.settings.get(moduleName, "showPrevious")) hbsData.duration[type].old = oldVal;
+                }
+                // New line variable
+                if (Object.keys(changes.duration).length > 1) hbsData.multivalues = true;
+                
+                // Prevent empty messages
+                if (Object.keys(hbsData.duration).length < 1) return;
+                renderTemplate(EFFECT_DURATION_TEMPLATE, hbsData).then(async (content) => {
+                    await ChatMessage.create({
+                        content,
+                        whisper,
+                        flags: { [moduleName]: { effects: true } }
+                    });
+                });
+            }
+
+            // Effects change
+            if (isEffects) {
+                const effects = Object.values(changes).find(Array.isArray);
+                var old_effects = [...activeEffect.changes];
+                var parsedEffects = [];
+
+                // Handling key changes
+                for (let effect of effects) {
+                    const matchedEffectIndex = old_effects.findIndex(e => e.key === effect.key);
+                    if (matchedEffectIndex !== -1) {
+                        var matchedEffect = old_effects[matchedEffectIndex];
+                        old_effects.splice(matchedEffectIndex, 1);
+                    }
+                    parsedEffects.push({ new: effect, old: matchedEffect });
+                }
+                if (old_effects.length > 0) {
+                    const unmatchedEffectIndex = parsedEffects.findIndex(e => e.old === undefined);
+                    if (unmatchedEffectIndex !== -1) parsedEffects[unmatchedEffectIndex].old = old_effects[0];
+                }
+                
+                hbsData.effects = {}
+                for (let effect of parsedEffects) {
+                    const newEffect = { label: effect.new.key, mode: effect.new.mode, value: effect.new.value };
+                    const oldEffect = { label: effect.old.key, mode: effect.old.mode, value: effect.old.value };
+                    
+                    for (let keyName in newEffect) {
+                        if (newEffect[keyName] !== oldEffect[keyName]) {
+                            hbsData.effects[effect.new.key] = { ...hbsData.effects[effect.new.key], [keyName]: newEffect[keyName] }
+                            if (!hbsData.effects[effect.new.key].label) hbsData.effects[effect.new.key].label = newEffect.label;
+                            if (game.settings.get(moduleName, "showPrevious")) {
+                                const oldKeyName = `old_${keyName}`;
+                                hbsData.effects[effect.new.key] = { ...hbsData.effects[effect.new.key], [oldKeyName]: oldEffect[keyName] };
+                            }
+                        }
+                    }
+                }
+
+                if (Object.keys(hbsData.effects).length < 1) return;
+                renderTemplate(EFFECT_EFFECTS_TEMPLATE, hbsData).then(async (content) => {
+                    await ChatMessage.create({
+                        content,
+                        whisper,
+                        flags: { [moduleName]: { effects: true } }
+                    });
+                });
+            }
+        });
+
         // Party Inventory compatibility
         if (game.modules.get("party-inventory")?.active) {
             Hooks.on("preUpdateSetting", async (setting, data, options, userID) => {
@@ -668,6 +796,10 @@ class CharacterMonitorColorMenu extends FormApplication {
                 color: settingsData.feats,
                 label: game.i18n.localize("DND5E.Features")
             },
+            effects: {
+                color: settingsData.effects,
+                label: game.i18n.localize("DND5E.Effects")
+            },
             currency: {
                 color: settingsData.currency,
                 label: game.i18n.localize("DND5E.Currency")
@@ -697,6 +829,8 @@ class CharacterMonitorColorMenu extends FormApplication {
             html.find(`input[data-edit="slots"]`).val("#b042f5");
             html.find(`input[name="feats"]`).val("#425af5");
             html.find(`input[data-edit="feats"]`).val("#425af5");
+            html.find(`input[name="effects"]`).val("#c86400");
+            html.find(`input[data-edit="effects"]`).val("#c86400");
             html.find(`input[name="currency"]`).val("#b59b3c");
             html.find(`input[data-edit="currency"]`).val("#b59b3c");
             html.find(`input[name="proficiency"]`).val("#37908a");

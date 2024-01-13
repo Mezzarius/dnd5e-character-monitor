@@ -1,0 +1,10 @@
+<div class="dnd5e-cm-content">
+    <span class="dnd5e-cm-text">
+        <span>{{characterName}} | {{activeEffectName}} </span>
+        {{#each effects}}
+            {{#if label}}<br><span>{{localize "characterMonitor.chatMessage.effects.label"}}: {{#if old_label includeZero=true}} {{old_label}} -> {{/if}} {{label}}</span>{{/if}}
+            {{#if mode}}<br><span>{{localize "characterMonitor.chatMessage.effects.mode"}}: {{#if old_mode includeZero=true}} {{old_mode}} -> {{/if}} {{mode}}</span>{{/if}}
+            {{#if value}}<br><span>{{localize "characterMonitor.chatMessage.effects.value"}}: {{#if old_value includeZero=true}} {{old_value}} -> {{/if}} {{value}}</span>{{/if}}
+        {{/each}}
+    </span>
+</div>

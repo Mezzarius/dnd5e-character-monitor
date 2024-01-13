@@ -33,6 +33,10 @@
                 "name": "Monitor Resources",
                 "hint": "Tracks when a character changes resources values counts on their character sheet."
             },
+            "monitorActiveEffects": {
+                "name": "Monitor Active Effects",
+                "hint": "Tracks when a character changes active effects on their character sheet."
+            },
             "monitorCurrency": {
                 "name": "Monitor Currency",
                 "hint": "Tracks when a character changes currency on their character sheet."
@@ -73,7 +77,22 @@
             "uses": "uses",
             "attunesTo": "attunes to an item",
             "breaksAttune": "breaks attunement to an item",
-            "SpellSlots": "Spell Slots"
+            "SpellSlots": "Spell Slots",
+            "enabled": "enabled",
+            "disabled": "disabled",
+            "duration": {
+                "seconds": "seconds",
+                "startTime": "start time",
+                "rounds": "rounds",
+                "turns": "turns",
+                "startRound": "start round",
+                "startTurn": "start turn"
+            },
+            "effects": {
+                "label": "label",
+                "mode": "mode",
+                "value": "value"
+            }
         },
         "colorMenu": {
             "on": "Equip/Prepare/Attune",
