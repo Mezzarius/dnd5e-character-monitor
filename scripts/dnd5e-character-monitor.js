@@ -3,6 +3,7 @@ const moduleName = "dnd5e-character-monitor";
 let trashIconSetting;
 const TEMPLATE_DIR = `modules/${moduleName}/templates`
 const ITEM_EQUIP_TEMPLATE = `${TEMPLATE_DIR}/itemEquip.hbs`;
+const ITEM_QUANTITY_TEMPLATE = `${TEMPLATE_DIR}/itemQuantity.hbs`;
 const ITEM_ATTUNE_TEMPLATE = `${TEMPLATE_DIR}/itemAttune.hbs`;
 const SPELL_PREPARE_TEMPLATE = `${TEMPLATE_DIR}/spellPrepare.hbs`;
 const FEAT_USES_TEMPLATE = `${TEMPLATE_DIR}/featUses.hbs`;
@@ -15,7 +16,15 @@ const ABILITY_TEMPLATE = `${TEMPLATE_DIR}/ability.hbs`;
 Hooks.once("setup", async () => {
     console.log(`${moduleName} | Initializing`);
 
-    await loadTemplates([ITEM_EQUIP_TEMPLATE, ITEM_ATTUNE_TEMPLATE, SPELL_PREPARE_TEMPLATE, FEAT_USES_TEMPLATE, SPELL_SLOTS_TEMPLATE, RESOURCE_USES_TEMPLATE]);
+    await loadTemplates([
+        ITEM_EQUIP_TEMPLATE, 
+        ITEM_QUANTITY_TEMPLATE,
+        ITEM_ATTUNE_TEMPLATE, 
+        SPELL_PREPARE_TEMPLATE, 
+        FEAT_USES_TEMPLATE, 
+        SPELL_SLOTS_TEMPLATE, 
+        RESOURCE_USES_TEMPLATE
+    ]);
 
     // Open module API
     window.CharacterMonitor = CharacterMonitor;
@@ -68,6 +77,15 @@ class CharacterMonitor {
         game.settings.register(moduleName, "monitorEquip", {
             name: game.i18n.localize("characterMonitor.settings.monitorEquip.name"),
             hint: game.i18n.localize("characterMonitor.settings.monitorEquip.hint"),
+            scope: "world",
+            type: Boolean,
+            default: true,
+            config: true
+        });
+
+        game.settings.register(moduleName, "monitorQuantity", {
+            name: game.i18n.localize("characterMonitor.settings.monitorQuantity.name"),
+            hint: game.i18n.localize("characterMonitor.settings.monitorQuantity.hint"),
             scope: "world",
             type: Boolean,
             default: true,
@@ -316,17 +334,18 @@ class CharacterMonitor {
 
             // Get currently monitored changes
             const monitoredChangesDict = {};
-            for (const monitor of ["monitorEquip", "monitorSpellPrep", "monitorFeats", "monitorAttune"]) {
+            for (const monitor of ["monitorEquip", "monitorQuantity", "monitorSpellPrep", "monitorFeats", "monitorAttune"]) {
                 monitoredChangesDict[monitor] = game.settings.get(moduleName, monitor);
             }
 
             // Parse changes
             const isEquip = monitoredChangesDict["monitorEquip"] && (item.type === "equipment" || item.type === "weapon") && "equipped" in (data.system || {});
+            const isQuantity = monitoredChangesDict["monitorQuantity"] && "quantity" in (data.system || {});
             const isSpellPrep = monitoredChangesDict["monitorSpellPrep"] && item.type === "spell" && "prepared" in (data?.system?.preparation || {});
             const isFeat = monitoredChangesDict["monitorFeats"] && item.type === "feat" && ("value" in (data?.system?.uses || {}) || "max" in (data?.system?.uses || {}));
             const isAttune = monitoredChangesDict["monitorAttune"] && (item.type === "equipment" || item.type === "weapon") && "attunement" in (data.system || {});
 
-            if (!(isEquip || isSpellPrep || isFeat || isAttune)) return;
+            if (!(isEquip || isQuantity || isSpellPrep || isFeat || isAttune)) return;
 
             // If "showGMonly" setting enabled, whisper to all owners (this includes the GM).
             // Players may or may not actually see the message depending on the allowPlayerView setting.
@@ -348,6 +367,27 @@ class CharacterMonitor {
                         content,
                         whisper,
                         flags: { [moduleName]: { equip: data.system.equipped } }
+                    });
+                });
+            }
+
+            if (isQuantity) {
+                const newQuantity = data.system.quantity;
+                const oldQuantity = item.system.quantity;
+
+                checkSecondHooks({ itemId: item.id }).then(async (didFire) => {
+                    if (didFire) return;
+
+                    hbsData.quantity = {
+                        value: newQuantity
+                    };
+                    if (game.settings.get(moduleName, "showPrevious")) hbsData.quantity.old = oldQuantity;
+                    const content = await renderTemplate(ITEM_QUANTITY_TEMPLATE, hbsData);
+
+                    await ChatMessage.create({
+                        content,
+                        whisper,
+                        flags: { [moduleName]: { equip: data.system.quantity } }
                     });
                 });
             }

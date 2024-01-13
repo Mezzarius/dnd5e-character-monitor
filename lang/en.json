@@ -9,6 +9,10 @@
                 "name": "Monitor Equipment",
                 "hint": "Tracks when a character equips/unequips equipment."
             },
+            "monitorQuantity": {
+                "name": "Monitor Quantity",
+                "hint": "Tracks when a character changes items quantity."
+            },
             "monitorAttune": {
                 "name": "Monitor Attunement",
                 "hint": "Tracks when a character attunes to equipment or breaks attunement."
