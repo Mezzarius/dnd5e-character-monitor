@@ -449,6 +449,8 @@ class CharacterMonitor {
         // Spell Slot, Resource, Currency, Proficiency, Ability changes
         Hooks.on("preUpdateActor", async (actor, data, options, userID) => {
             if (actor.type !== "character") return;
+            // Ignore updates from the dnd5e advancement system
+            if (game.system.id === 'dnd5e' && "isAdvancement" in options) return;
 
             const whisper = game.settings.get(moduleName, "showGMonly") ?
                 game.users.filter(u => u.isGM).map(u => u.id) : [];
