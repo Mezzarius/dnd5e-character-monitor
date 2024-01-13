@@ -520,7 +520,7 @@ class CharacterMonitor {
                     if (typeof changes.value !== "number") continue;
 
                     hbsData.proficiency = {
-                        label: CONFIG.DND5E.skills[skl],
+                        label: CONFIG.DND5E.skills[skl].label,
                         value: CONFIG.DND5E.proficiencyLevels[changes.value]
                     };
                     const content = await renderTemplate(PROFICIENCY_TEMPLATE, hbsData);
@@ -542,7 +542,7 @@ class CharacterMonitor {
                     const oldValue = actor.system.abilities[abl].value;
 
                     hbsData.ability = {
-                        label: CONFIG.DND5E.abilities[abl],
+                        label: CONFIG.DND5E.abilities[abl].label,
                         value: changes.value
                     };
                     if (game.settings.get(moduleName, "showPrevious")) hbsData.ability.old = oldValue;
