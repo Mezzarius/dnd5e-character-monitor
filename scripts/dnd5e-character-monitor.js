@@ -727,6 +727,58 @@ class CharacterMonitor {
             }
         });
 
+        // Effect is created
+        Hooks.on("preCreateActiveEffect", async (activeEffect, data, options, userID) => {
+            if (!game.settings.get(moduleName, "monitorActiveEffects")) return;
+
+            const actor = activeEffect.parent;
+            if (actor.type !== "character") return;
+            if (activeEffect.origin && activeEffect.origin.includes("Item")) return;
+
+            const whisper = game.settings.get(moduleName, "showGMonly") ?
+                game.users.filter(u => u.isGM).map(u => u.id) : [];
+
+            const hbsData = {
+                characterName: actor.name,
+                activeEffectName: activeEffect.name,
+                disabled: false
+            };
+
+            renderTemplate(EFFECT_ENABLED_TEMPLATE, hbsData).then(async (content) => {
+                await ChatMessage.create({
+                    content,
+                    whisper,
+                    flags: { [moduleName]: { effects: true } }
+                });
+            });
+        });
+
+        // Effect is deleted
+        Hooks.on("preDeleteActiveEffect", async (activeEffect, options, userID) => {
+            if (!game.settings.get(moduleName, "monitorActiveEffects")) return;
+
+            const actor = activeEffect.parent;
+            if (actor.type !== "character") return;
+            if (activeEffect.origin && activeEffect.origin.includes("Item")) return;
+
+            const whisper = game.settings.get(moduleName, "showGMonly") ?
+                game.users.filter(u => u.isGM).map(u => u.id) : [];
+
+            const hbsData = {
+                characterName: actor.name,
+                activeEffectName: activeEffect.name,
+                disabled: true
+            };
+
+            renderTemplate(EFFECT_ENABLED_TEMPLATE, hbsData).then(async (content) => {
+                await ChatMessage.create({
+                    content,
+                    whisper,
+                    flags: { [moduleName]: { effects: true } }
+                });
+            });
+        });
+
         // Party Inventory compatibility
         if (game.modules.get("party-inventory")?.active) {
             Hooks.on("preUpdateSetting", async (setting, data, options, userID) => {
