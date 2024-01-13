@@ -12,10 +12,12 @@ For dnd5e.
 When one of the following changes is made via the **character sheet**, a log will be made in chat. The colors can be customized in the module settings.
 
 * Equip/Unequip an item
+* Change item quantity
 * Attune to / Break attunement to a magical item
 * Prepare/Unprepare a spell
 * Change number spell slots
 * Change number of feature usage
 * Change resource values
+* Active effects changes
 
 <img src="/img/character-monitor.png">
