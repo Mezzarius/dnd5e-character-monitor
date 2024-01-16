@@ -1,0 +1,9 @@
+<div class="dnd5e-cm-content">
+    <span class="dnd5e-cm-text">
+        <span>{{characterName}} | {{activeEffectName}} </span>
+        {{#each duration}}
+            {{#if ../multivalues}}<br>{{/if}}
+            <span>{{label}}: {{#if old includeZero=true}} {{old}} -> {{/if}} {{value}}</span>
+        {{/each}}
+    </span>
+</div>

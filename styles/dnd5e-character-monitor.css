@@ -3,6 +3,7 @@
     --dnd5e-cm-off: #c50d19;
     --dnd5e-cm-feats: #425af5;
     --dnd5e-cm-slots: #b042f5;
+    --dnd5e-cm-effects: #c86400;
     --dnd5e-cm-currency: #b59b3c;
     --dnd5e-cm-proficiency: #37908a;
     --dnd5e-cm-ability: #37908a;
@@ -42,6 +43,10 @@
 
 .message.dnd5e-cm-message.dnd5e-cm-slots {
 	background: var(--dnd5e-cm-slots);
+}
+
+.message.dnd5e-cm-message.dnd5e-cm-effects {
+	background: var(--dnd5e-cm-effects);
 }
 
 .message.dnd5e-cm-message.dnd5e-cm-currency {
