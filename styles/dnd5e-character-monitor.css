@@ -20,6 +20,14 @@
     border: 2px solid #191813d6;
 }
 
+.message.dnd5e-cm-message .button.message-delete{
+    display: none;
+}
+
+.message.dnd5e-cm-message:hover .button.message-delete {
+    display: block;
+}
+
 .message.dnd5e-cm-message.dnd5e-cm-on {
 	background: var(--dnd5e-cm-on);
 }
