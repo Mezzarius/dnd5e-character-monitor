@@ -1,4 +1,6 @@
 :root {
+    --dnd5e-cm-hpPlus: #06a406;
+    --dnd5e-cm-hpMinus: #c50d19;
     --dnd5e-cm-on: #06a406;
     --dnd5e-cm-off: #c50d19;
     --dnd5e-cm-feats: #425af5;
@@ -10,7 +12,7 @@
     --dnd5e-cm-display: 'flex';
 }
 
-.message.dnd5e-cm-message {
+div div.dnd5e-cm {
     display: var(--dnd5e-cm-display);
     text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
     color: white;
@@ -18,62 +20,49 @@
     font-size: 12px;
     margin: 2px;
     padding: 2px;
-    border: 2px solid #191813d6;
 }
 
-.message.dnd5e-cm-message .button.message-delete{
-    display: none;
+.message.dnd5e-cm-hpPlus {
+    background: var(--dnd5e-cm-hpPlus) !important;
 }
 
-.message.dnd5e-cm-message:hover .button.message-delete {
-    display: block;
+.message.dnd5e-cm-hpMinus {
+    background: var(--dnd5e-cm-hpMinus) !important;
 }
 
-.message.dnd5e-cm-message.dnd5e-cm-on {
-	background: var(--dnd5e-cm-on);
+.message.dnd5e-cm-on {
+    background: var(--dnd5e-cm-on) !important;
 }
 
-.message.dnd5e-cm-message.dnd5e-cm-off {
-	background: var(--dnd5e-cm-off);
+.message.dnd5e-cm-off {
+    background: var(--dnd5e-cm-off) !important;
 }
 
-.message.dnd5e-cm-message.dnd5e-cm-feats {
-	background: var(--dnd5e-cm-feats);
+.message.dnd5e-cm-feats {
+    background: var(--dnd5e-cm-feats) !important;
 }
 
-.message.dnd5e-cm-message.dnd5e-cm-slots {
-	background: var(--dnd5e-cm-slots);
+.message.dnd5e-cm-slots {
+    background: var(--dnd5e-cm-slots) !important;
 }
 
-.message.dnd5e-cm-message.dnd5e-cm-effects {
-	background: var(--dnd5e-cm-effects);
+.message.dnd5e-cm-effects {
+    background: var(--dnd5e-cm-effects) !important;
 }
 
-.message.dnd5e-cm-message.dnd5e-cm-currency {
-	background: var(--dnd5e-cm-currency);
+.message.dnd5e-cm-currency {
+    background: var(--dnd5e-cm-currency) !important;
 }
 
-.message.dnd5e-cm-message.dnd5e-cm-proficiency {
-	background: var(--dnd5e-cm-proficiency);
+.message.dnd5e-cm-proficiency {
+    background: var(--dnd5e-cm-proficiency) !important;
 }
 
-.message.dnd5e-cm-message.dnd5e-cm-ability {
-	background: var(--dnd5e-cm-ability);
+.message.dnd5e-cm-ability {
+    background: var(--dnd5e-cm-ability) !important;
 }
 
-.message.dnd5e-cm-message header.message-header {
-    display: none !important;
-}
-
-.message.dnd5e-cm-message div.dnd5e-cm-content {
-    position: relative;
-}
-
-.message.dnd5e-cm-message span.dnd5e-cm-text {
-    padding-right: 5%;
-}
-
-.message.dnd5e-cm-message span.dnd5e-cm-trash {
+.message span.dnd5e-cm-trash {
     position: absolute;
     left: 95%;
 }
