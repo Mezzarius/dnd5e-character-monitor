@@ -5,13 +5,17 @@
                 "name": "Customize Character Monitor Colors",
                 "label": "Customize"
             },
+            "monitorHP": {
+                "name": "Monitor HP",
+                "hint": "Tracks when a character's or NPC's HP changes."
+            },
             "monitorEquip": {
                 "name": "Monitor Equipment",
                 "hint": "Tracks when a character equips/unequips equipment."
             },
             "monitorQuantity": {
                 "name": "Monitor Quantity",
-                "hint": "Tracks when a character changes items quantity."
+                "hint": "Tracks when a character's item changes quantity."
             },
             "monitorAttune": {
                 "name": "Monitor Attunement",
@@ -49,6 +53,10 @@
                 "name": "Monitor Ability Scores",
                 "hint": "Tracks when a character changes ability scores."
             },
+            "monitorSheetMode": {
+                "name": "Monitor Sheet Mode Toggle",
+                "hint": "Tracks when character sheet toggles between Play and Edit modes."
+            },
             "showGMonly": {
                 "name": "Display Character Monitor to GM Users only",
                 "hint": "Chat messages can be revealed to players using context menu."
@@ -63,6 +71,22 @@
             },
             "trashIcon": {
                 "name": "Enable Health Monitor Chat Message Trash Icon"
+            },
+            "useTokenName": {
+                "name": "Use Token Name",
+                "hint": "For unlinked tokens, token name will be used. For linked tokens, prototype token name will be used."
+            },
+            "hideNPCs": {
+                "name": "Hide NPC Health Log from Players",
+                "hint": "GM users can reveal chat messages to players using context menu"
+            },
+            "hideNPCname": {
+                "name": "Hide NPC Name",
+                "hint": "Replaces NPC name with text set below."
+            },
+            "replacementName": {
+                "name": "Hidden NPC Name Replacement",
+                "hint": "If above setting is enabled, NPC name will be replaced with text entered here."
             }
         },
         "control": {
@@ -97,7 +121,8 @@
                 "label": "label",
                 "mode": "mode",
                 "value": "value"
-            }
+            },
+            "sheetMode": "Sheet Mode"
         },
         "colorMenu": {
             "hpPlus": "HP Increases",
@@ -107,42 +132,6 @@
         }
     },
     "healthMonitor": {
-        "settings": {
-            "useTokenName": {
-                "name": "Use Token Name",
-                "hint": "For unlinked tokens, token name will be used. For linked tokens, prototype token name will be used."
-            },
-            "hideNPCs": {
-                "name": "Hide NPC Health Log from Players",
-                "hint": "GM users can reveal chat messages to players using context menu"
-            },
-            "hideNPCname": {
-                "name": "Hide NPC Name",
-                "hint": "Replaces NPC name with text set below."
-            },
-            "replacementName": {
-                "name": "Hidden NPC Name Replacement",
-                "hint": "If above setting is enabled, NPC name will be replaced with text entered here."
-            },
-            "showGMonly": {
-                "name": "Display Health Monitor to GM Users only",
-                "hint": "Chat messages can be revealed to players using context menu."
-            },
-            "showToggle": {
-                "name": "Show Health Monitor Toggle",
-                "hint": "Temporarily disable Health Monitor by toggling off the control button on the token toolbar. The control button is only visible to GM users."
-            },
-            "showRes": {
-                "name": "Show Damage Immunities, Resistances, and Vulnerabilities",
-                "hint": "Other modules required for damage reduction automation."
-            },
-            "trackMax": {
-                "name": "Show Changes to Max HP / Temp Max HP"
-            },
-            "trashIcon": {
-                "name": "Enable Health Monitor Chat Message Trash Icon"
-            }
-        },
         "control": {
             "title": "Toggle Health Monitor"
         },

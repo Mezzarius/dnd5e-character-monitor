@@ -1,5 +1,5 @@
-<div class="dnd5e-cm-content">
+<div class="dnd5e-cm">
     <span class="dnd5e-cm-text">
-        {{characterName}} | {{itemName}}: {{#if quantity.old includeZero=true}} {{quantity.old}} -> {{/if}} {{quantity.value}}
+        {{characterName}} | {{itemName}}: {{#if showPrevious}}{{quantity.old}} → {{/if}}{{quantity.value}}
     </span>
 </div>

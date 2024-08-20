@@ -27,13 +27,14 @@ Hooks.once('init', async () => {
             effects: '#c86400',
             currency: '#b59b3c',
             proficiency: '#37908a',
-            ability: '#37908a'
+            ability: '#37908a',
+            sheetMode: '#000000'
         },
-        config: false
-        // onChange: debounce(CharacterMonitor.setCssVariables, 500)
+        config: false,
+        onChange: setCSSvariables
     });
 
-    const monitorTypes = [,
+    const monitorTypes = [
         'HP',
         'Equip',
         'Quantity',
@@ -41,11 +42,9 @@ Hooks.once('init', async () => {
         'SpellPrep',
         'SpellSlots',
         'Feats',
-        'Resources',
-        'ActiveEffects',
         'Currency',
         'Proficiency',
-        'Ability'
+        'SheetMode'
     ];
 
     for (const monitorType of monitorTypes) {
@@ -69,15 +68,15 @@ Hooks.once('init', async () => {
         // onChange: debounce(CharacterMonitor.setCssVariables, 500)
     });
 
-    game.settings.register(moduleID, 'allowPlayerView', {
-        name: game.i18n.localize('characterMonitor.settings.allowPlayerView.name'),
-        hint: game.i18n.localize('characterMonitor.settings.allowPlayerView.hint'),
-        scope: 'world',
-        type: Boolean,
-        default: false,
-        config: true
-        // onChange: debounce(CharacterMonitor.setCssVariables, 500)
-    });
+    // game.settings.register(moduleID, 'allowPlayerView', {
+    //     name: game.i18n.localize('characterMonitor.settings.allowPlayerView.name'),
+    //     hint: game.i18n.localize('characterMonitor.settings.allowPlayerView.hint'),
+    //     scope: 'world',
+    //     type: Boolean,
+    //     default: false,
+    //     config: true
+    //     // onChange: debounce(CharacterMonitor.setCssVariables, 500)
+    // });
 
     game.settings.register(moduleID, 'showToggle', {
         name: game.i18n.localize('characterMonitor.settings.showToggle.name'),
@@ -114,8 +113,8 @@ Hooks.once('init', async () => {
     });
 
     game.settings.register(moduleID, 'useTokenName', {
-        name: game.i18n.localize('healthMonitor.settings.useTokenName.name'),
-        hint: game.i18n.localize('healthMonitor.settings.useTokenName.hint'),
+        name: game.i18n.localize('characterMonitor.settings.useTokenName.name'),
+        hint: game.i18n.localize('characterMonitor.settings.useTokenName.hint'),
         scope: 'world',
         type: Boolean,
         default: false,
@@ -123,30 +122,31 @@ Hooks.once('init', async () => {
     });
 
     game.settings.register(moduleID, 'hideNPCs', {
-        name: game.i18n.localize('healthMonitor.settings.hideNPCs.name'),
-        hint: game.i18n.localize('healthMonitor.settings.hideNPCs.hint'),
+        name: game.i18n.localize('characterMonitor.settings.hideNPCs.name'),
+        hint: game.i18n.localize('characterMonitor.settings.hideNPCs.hint'),
         scope: 'world',
         type: Boolean,
         default: false,
         config: true
     });
+
     game.settings.register(moduleID, 'hideNPCname', {
-        name: game.i18n.localize('healthMonitor.settings.hideNPCname.name'),
-        hint: game.i18n.localize('healthMonitor.settings.hideNPCname.hint'),
+        name: game.i18n.localize('characterMonitor.settings.hideNPCname.name'),
+        hint: game.i18n.localize('characterMonitor.settings.hideNPCname.hint'),
         scope: 'world',
         type: Boolean,
         default: false,
         config: true
     });
+
     game.settings.register(moduleID, 'replacementName', {
-        name: game.i18n.localize('healthMonitor.settings.replacementName.name'),
-        hint: game.i18n.localize('healthMonitor.settings.replacementName.hint'),
+        name: game.i18n.localize('characterMonitor.settings.replacementName.name'),
+        hint: game.i18n.localize('characterMonitor.settings.replacementName.hint'),
         scope: 'world',
         type: String,
         default: '???',
         config: true
     });
-
 
     const templateDir = `modules/${moduleID}/templates`;
     await loadTemplates([
@@ -157,14 +157,16 @@ Hooks.once('init', async () => {
         `${templateDir}/spellPrepare.hbs`,
         `${templateDir}/featUses.hbs`,
         `${templateDir}/spellSlots.hbs`,
-        `${templateDir}/resourceUses.hbs`,
         `${templateDir}/currency.hbs`,
         `${templateDir}/proficiency.hbs`,
         `${templateDir}/ability.hbs`,
         `${templateDir}/effectEnabled.hbs`,
         `${templateDir}/effectDuration.hbs`,
         `${templateDir}/effectEffects.hbs`,
+        `${templateDir}/toggleSheetMode.hbs`
     ]);
+
+    libWrapper.register(moduleID, 'game.dnd5e.applications.actor.ActorSheet5eCharacter2.prototype._onChangeSheetMode', toggleSheetMode, 'WRAPPER');
 });
 
 Hooks.once('setup', async () => {
@@ -195,7 +197,7 @@ Hooks.once('socketlib.ready', () => {
 
 Hooks.on('renderChatMessage', (app, [html], appData) => {
     if (!appData.message.flags[moduleID] || !html) return;
-    
+
     const message = game.messages.get(appData.message._id);
     const monitorType = message.getFlag(moduleID, 'monitorType');
     if (monitorType) {
@@ -205,25 +207,106 @@ Hooks.on('renderChatMessage', (app, [html], appData) => {
 });
 
 Hooks.on('preUpdateActor', async (actor, diff, options, userID) => {
-    if (!game.settings.get(moduleID, 'cmToggle')) return;
+    if (actor.type !== 'character') return;
+    if (game.system.id === 'dnd5e' && "isAdvancement" in options) return;
 
-    lg(diff)
-    let processHP = Boolean(diff.system?.attributes?.hp);
-    if (actor.type === 'npc' && game.settings.get(moduleID, 'hideNPCs')) processHP = false;
+    const whisper = game.settings.get(moduleID, 'showGMonly')
+        ? game.users.filter(u => u.isGM).map(u => u.id)
+        : [];
 
-    if (processHP) {
-        const previousData = {
-            value: actor.system.attributes.hp.value,
-            max: actor.system.attributes.hp.max,
-            temp: actor.system.attributes.hp.temp
-        };
+    const templateData = {
+        characterName: game.settings.get(moduleID, 'useTokenName') ? (actor.token?.name || actor.prototypeToken.name) : actor.name
+    };
+
+    if (game.settings.get(moduleID, 'monitorSpellSlots') && ('spells' in (diff.system || {}))) {
+        for (const [spellLevel, newSpellData] of Object.entries(diff.system.spells)) {
+            const oldSpellData = actor.system.spells[spellLevel];
+            const hasValue = ("value" in newSpellData);
+            const hasMax = ("override" in newSpellData) || ("max" in newSpellData);
+            if (!hasValue && !hasMax) continue;
+
+            const newMax = newSpellData.override ?? newSpellData.max;
+
+            const isValueUnchanged = (!hasValue || (!newSpellData.value && !oldSpellData.value));
+            const isMaxUnchanged = (!hasMax || (!newMax && !oldSpellData.max));
+            if (isValueUnchanged && isMaxUnchanged) continue;
+
+            const levelNum = parseInt(spellLevel.slice(-1));
+            templateData.spellSlot = {
+                label: CONFIG.DND5E.spellLevels[levelNum],
+                value: (hasValue ? newSpellData.value : oldSpellData.value) || 0,
+                max: (newMax ?? oldSpellData.max) || 0
+            }
+            if (game.settings.get(moduleID, 'showPrevious')) templateData.spellSlot.old = oldSpellData.value;
+            const content = await renderTemplate(`modules/${moduleID}/templates/spellSlots.hbs`, templateData);
+            const flags = {
+                [moduleID]: {
+                    monitorType: 'slots'
+                }
+            };
+            await socket.executeAsGM('createMessage', flags, content, whisper);
+        }
+    }
+
+    if (game.settings.get(moduleID, 'monitorCurrency') && ('currency' in (diff.system || {}))) {
+        for (const [currency, newValue] of Object.entries(diff.system.currency)) {
+            const oldValue = actor.system.currency[currency];
+
+            // Ignore any updates that attempt to change values between zero <--> null.;
+            if (newValue === null || newValue == oldValue) continue;
+
+            templateData.currency = {
+                label: currency,
+                value: newValue
+            };
+            if (game.settings.get(moduleID, 'showPrevious')) templateData.currency.old = oldValue;
+            const content = await renderTemplate(`modules/${moduleID}/templates/currency.hbs`, templateData);
+            const flags = {
+                [moduleID]: {
+                    monitorType: 'currency'
+                }
+            };
+            await socket.executeAsGM('createMessage', flags, content, whisper);
+        }
+    }
+
+    if (game.settings.get(moduleID, 'monitorProficiency') && ('skills' in (diff.system || {}))) {
+        for (const [skl, changes] of Object.entries(diff.system.skills)) {
+            if (!('value' in changes)) continue;
+            if (typeof changes.value !== 'number') continue;
+
+            templateData.proficiency = {
+                label: CONFIG.DND5E.skills[skl].label,
+                value: CONFIG.DND5E.proficiencyLevels[changes.value]
+            };
+            const oldValue = actor.system.skills[skl].value;
+            if (oldValue === changes.value) continue;
+
+            const content = await renderTemplate(`modules/${moduleID}/templates/proficiency.hbs`, templateData);
+            const flags = {
+                [moduleID]: {
+                    monitorType: 'proficiency'
+                }
+            };
+            await socket.executeAsGM('createMessage', flags, content, whisper);
+        }
+    }
+});
+
+Hooks.on('updateActor', async (actor, diff, options, userID) => {
+    if (game.settings.get(moduleID, 'cmToggle') && !game.settings.get(moduleID, 'cmToggle')) return;
+
+    if (diff.system?.attributes?.hp) {
+        const previousData = options.dnd5e.hp
+        let characterName = game.settings.get(moduleID, 'useTokenName') ? (actor.token?.name || actor.prototypeToken.name) : actor.name;
+        if (actor.type === 'npc' && game.settings.get(moduleID, 'hideNPCname')) characterName = game.settings.get(moduleID, 'replacementName') ?? '???';
         const data = {
             previous: game.settings.get(moduleID, 'showPrevious'),
-            characterName: actor.name
+            characterName
         };
-        
+
         for (const healthType of ['value', 'max', 'temp']) {
-            const value = diff.system.attributes.hp[healthType];
+            const value = actor.system.attributes.hp[healthType];
             const previousValue = previousData[healthType];
             const delta = value - previousValue;
             if (delta) {
@@ -238,19 +321,122 @@ Hooks.on('preUpdateActor', async (actor, diff, options, userID) => {
                 data.value = value;
                 data.previousValue = previousValue;
                 const content = await renderTemplate(`modules/${moduleID}/templates/hp.hbs`, data);
-                await socket.executeAsGM('createMessage', flags, content);    
+                const whisper = game.settings.get(moduleID, 'showGMonly') || (game.settings.get(moduleID, 'hideNPCs') && actor.type === 'npc')
+                    ? game.users.filter(u => u.isGM).map(u => u.id)
+                    : [];
+                if (game.user.id === userID) await socket.executeAsGM('createMessage', flags, content, whisper);
             }
         }
     }
-    
-    if (actor.type !== 'character') return;
+});
 
-    
+Hooks.on('preUpdateItem', async (item, diff, options, userID) => {
+    if (game.settings.get(moduleID, 'cmToggle') && !game.settings.get(moduleID, 'cmToggle')) return;
+    if (item.parent?.type !== 'character') return;
+
+    const actor = item.parent;
+
+    const monitoredChangesDict = {};
+    for (const monitor of ['monitorEquip', 'monitorQuantity', 'monitorSpellPrep', 'monitorFeats', 'monitorAttune']) {
+        monitoredChangesDict[monitor] = game.settings.get(moduleID, monitor);
+    }
+
+    const isEquip = monitoredChangesDict['monitorEquip'] && (item.type === 'equipment' || item.type === 'weapon') && 'equipped' in (diff.system || {});
+    const isQuantity = monitoredChangesDict['monitorQuantity'] && 'quantity' in (diff.system || {});
+    const isSpellPrep = monitoredChangesDict['monitorSpellPrep'] && item.type === 'spell' && 'prepared' in (diff?.system?.preparation || {});
+    const isFeat = monitoredChangesDict['monitorFeats'] && item.type === 'feat' && ('value' in (diff?.system?.uses || {}) || 'max' in (diff?.system?.uses || {}));
+    const isAttune = monitoredChangesDict['monitorAttune'] && (item.type === 'equipment' || item.type === 'weapon') && 'attuned' in (diff.system || {});
+
+    if (!(isEquip || isQuantity || isSpellPrep || isFeat || isAttune)) return;
+
+    const whisper = game.settings.get(moduleID, 'showGMonly')
+        ? game.users.filter(u => item.parent.testUserPermission(u, CONST.DOCUMENT_PERMISSION_LEVELS.OWNER)).map(u => u.id)
+        : null;
+
+    const characterName = game.settings.get(moduleID, 'useTokenName') ? (actor.token?.name || actor.prototypeToken.name) : actor.name;
+    const templateData = {
+        characterName,
+        itemName: item.name,
+        showPrevious: game.settings.get(moduleID, 'showPrevious')
+    };
+
+    if (isEquip) {
+        templateData.equipped = diff.system.equipped;
+        const content = await renderTemplate(`modules/${moduleID}/templates/itemEquip.hbs`, templateData);
+        const flags = {
+            [moduleID]: {
+                monitorType: `${templateData.equipped ? 'on' : 'off'}`
+            }
+        };
+        await socket.executeAsGM('createMessage', flags, content, whisper);
+    }
+
+    if (isQuantity) {
+        const oldQuantity = item.system.quantity;
+        const newQuantity = diff.system.quantity;
+        templateData.quantity = {
+            old: oldQuantity,
+            value: newQuantity
+        };
+        const content = await renderTemplate(`modules/${moduleID}/templates/itemQuantity.hbs`, templateData);
+        const flags = {
+            [moduleID]: {
+                monitorType: `${newQuantity > oldQuantity ? 'on' : 'off'}`
+            }
+        };
+        await socket.executeAsGM('createMessage', flags, content, whisper);
+    }
+
+    if (isSpellPrep) {
+        templateData.prepared = diff.system.preparation.prepared;
+        const content = await renderTemplate(`modules/${moduleID}/templates/spellPrepare.hbs`, templateData);
+        const flags = {
+            [moduleID]: {
+                monitorType: `${templateData.prepared ? 'on' : 'off'}`
+            }
+        };
+        await socket.executeAsGM('createMessage', flags, content, whisper);
+    }
+
+    if (isFeat) {
+        const newUses = diff.system.uses;
+        const oldUses = item.system.uses;
+        const hasValue = ("value" in newUses);
+        const hasMax = ("max" in newUses);
+        if (!hasValue && !hasMax) return;
+
+        const isValueUnchanged = (!hasValue || (!newUses.value && !oldUses.value));
+        const isMaxUnchanged = (!hasMax || (!newUses.max && !oldUses.max));
+        if (isValueUnchanged && isMaxUnchanged) return;
+
+        templateData.uses = {
+            value: (hasValue ? newUses.value : oldUses.value) || 0,
+            max: (hasMax ? newUses.max : oldUses.max) || 0
+        };
+        const content = await renderTemplate(`modules/${moduleID}/templates/featUses.hbs`, templateData);
+        const flags = {
+            [moduleID]: {
+                monitorType: 'feats'
+            }
+        };
+        await socket.executeAsGM('createMessage', flags, content, whisper);
+    }
+
+    if (isAttune) {
+        templateData.attuned = diff.system.attuned;
+        const content = await renderTemplate(`modules/${moduleID}/templates/itemAttune.hbs`, templateData);
+        const flags = {
+            [moduleID]: {
+                monitorType: `${templateData.attuned ? 'on' : 'off'}`
+            }
+        };
+        await socket.executeAsGM('createMessage', flags, content, whisper);
+    }
 });
 
 
-function createMessage(flags, content) {
-    return ChatMessage.create({ flags, content });
+function createMessage(flags, content, whisper) {
+    return ChatMessage.create({ flags, content, whisper });
 }
 
 function setCSSvariables() {
@@ -261,11 +447,36 @@ function setCSSvariables() {
     }
 
     const showGmOnly = game.settings.get(moduleID, 'showGMonly');
-    const allowPlayerView = game.settings.get(moduleID, 'allowPlayerView');
+    // const allowPlayerView = game.settings.get(moduleID, 'allowPlayerView');
 
     const display = ((showGmOnly && !game.user.isGM && !allowPlayerView) ? 'none' : 'flex');
     // root.style.setProperty('--dnd5e-cm-display', display);
 }
+
+async function toggleSheetMode(wrapped, event) {
+    await wrapped(event);
+    if (!game.settings.get(moduleID, 'monitorSheetMode')) return;
+
+    const flags = {
+        [moduleID]: {
+            monitorType: 'sheetMode'
+        }
+    };
+
+    const actor = this.actor
+    const templateData = {
+        characterName: game.settings.get(moduleID, 'useTokenName') ? (actor.token?.name || actor.prototypeToken.name) : actor.name,
+        sheetMode: this._mode === 1 ? game.i18n.localize('DND5E.SheetModePlay') : game.i18n.localize('DND5E.SheetModeEdit')
+    };
+    const content = await renderTemplate(`modules/${moduleID}/templates/toggleSheetMode.hbs`, templateData);
+
+    const whisper = game.settings.get(moduleID, 'showGMonly')
+        ? game.users.filter(u => u.isGM).map(u => u.id)
+        : [];
+
+    await socket.executeAsGM('createMessage', flags, content, whisper);
+}
+
 
 class CharacterMonitorColorMenu extends FormApplication {
 
@@ -282,11 +493,11 @@ class CharacterMonitorColorMenu extends FormApplication {
         const settingsData = game.settings.get(moduleID, 'cmColors');
         const data = {
             hpPlus: {
-                color: settingsData.on,
+                color: settingsData.hpPlus,
                 label: game.i18n.localize('characterMonitor.colorMenu.hpPlus')
             },
             hpMinus: {
-                color: settingsData.on,
+                color: settingsData.hpMinus,
                 label: game.i18n.localize('characterMonitor.colorMenu.hpMinus')
             },
             on: {
@@ -305,10 +516,6 @@ class CharacterMonitorColorMenu extends FormApplication {
                 color: settingsData.feats,
                 label: game.i18n.localize('DND5E.Features')
             },
-            effects: {
-                color: settingsData.effects,
-                label: game.i18n.localize('DND5E.Effects')
-            },
             currency: {
                 color: settingsData.currency,
                 label: game.i18n.localize('DND5E.Currency')
@@ -317,9 +524,9 @@ class CharacterMonitorColorMenu extends FormApplication {
                 color: settingsData.proficiency,
                 label: game.i18n.localize('DND5E.Proficiency')
             },
-            ability: {
-                color: settingsData.ability,
-                label: game.i18n.localize('DND5E.Ability')
+            sheetMode: {
+                color: settingsData.sheetMode,
+                label: game.i18n.localize('characterMonitor.chatMessage.sheetMode')
             }
         };
 
@@ -330,6 +537,10 @@ class CharacterMonitorColorMenu extends FormApplication {
         super.activateListeners(html);
 
         html.on('click', `button[name='reset']`, () => {
+            html.find(`input[name='hpPlus']`).val('#06a406');
+            html.find(`input[data-edit='hpPlus']`).val('#06a406');
+            html.find(`input[name='hpMinus']`).val('#c50d19');
+            html.find(`input[data-edit='hpMinus']`).val('#c50d19');
             html.find(`input[name='on']`).val('#06a406');
             html.find(`input[data-edit='on']`).val('#06a406');
             html.find(`input[name='off']`).val('#c50d19');
@@ -346,6 +557,8 @@ class CharacterMonitorColorMenu extends FormApplication {
             html.find(`input[data-edit='proficiency']`).val('#37908a');
             html.find(`input[name='ability']`).val('#37908a');
             html.find(`input[data-edit='ability']`).val('#37908a');
+            html.find(`input[name='sheetMode']`).val('#000000');
+            html.find(`input[data-edit='sheetMode']`).val('#000000');
         });
     }
 
