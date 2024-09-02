@@ -209,6 +209,7 @@ Hooks.on('renderChatMessage', (app, [html], appData) => {
 Hooks.on('preUpdateActor', async (actor, diff, options, userID) => {
     if (actor.type !== 'character') return;
     if (game.system.id === 'dnd5e' && "isAdvancement" in options) return;
+    if (game.settings.get(moduleID, 'showToggle') && !game.settings.get(moduleID, 'cmToggle')) return;
 
     const whisper = game.settings.get(moduleID, 'showGMonly')
         ? game.users.filter(u => u.isGM).map(u => u.id)
@@ -294,7 +295,8 @@ Hooks.on('preUpdateActor', async (actor, diff, options, userID) => {
 });
 
 Hooks.on('updateActor', async (actor, diff, options, userID) => {
-    if (game.settings.get(moduleID, 'cmToggle') && !game.settings.get(moduleID, 'cmToggle')) return;
+    if (!game.settings.get(moduleID, 'monitorHP')) return;
+    if (game.settings.get(moduleID, 'showToggle') && !game.settings.get(moduleID, 'cmToggle')) return;
 
     if (diff.system?.attributes?.hp) {
         const previousData = options.dnd5e.hp
