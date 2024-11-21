@@ -167,6 +167,7 @@ Hooks.once('init', async () => {
     ]);
 
     libWrapper.register(moduleID, 'game.dnd5e.applications.actor.ActorSheet5eCharacter2.prototype._onChangeSheetMode', toggleSheetMode, 'WRAPPER');
+    libWrapper.register(moduleID, 'CONFIG.Item.documentClass.prototype.prepareData', prepareItem, 'WRAPPER');
 });
 
 Hooks.once('setup', async () => {
@@ -390,6 +391,8 @@ Hooks.on('preUpdateItem', async (item, diff, options, userID) => {
     }
 
     if (isSpellPrep) {
+        if (item.characterMonitor?.prepared === diff.system.preparation.prepared) return;
+
         templateData.prepared = diff.system.preparation.prepared;
         const content = await renderTemplate(`modules/${moduleID}/templates/spellPrepare.hbs`, templateData);
         const flags = {
@@ -477,6 +480,29 @@ async function toggleSheetMode(wrapped, event) {
         : [];
 
     await socket.executeAsGM('createMessage', flags, content, whisper);
+}
+
+function prepareItem(wrapped) {
+    // lg(this)
+    switch (this.type) {
+        case 'spell':
+            this.characterMonitor = {
+                prepared: this.system?.preparation?.prepared
+            };
+            break;
+
+        case 'weapon':
+            break;
+
+        case 'feat':
+            break;
+
+        case 'equipment':
+            // this.characterMonitor = {equipped: false}
+            break;
+
+    }
+    return wrapped();
 }
 
 
