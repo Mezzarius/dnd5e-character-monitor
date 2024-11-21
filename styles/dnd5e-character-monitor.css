@@ -13,12 +13,14 @@
     --dnd5e-cm-display: 'flex';
 }
 
+li.dnd5e-cm {
+    padding: 5px !important;
+}
+
 div div.dnd5e-cm {
     text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
     color: white;
-    /* font-size: 12px; */
-    margin: 2px;
-    padding: 2px;
+    font-size: var(--font-size-10);
 }
 
 .message.dnd5e-cm-hpPlus {
