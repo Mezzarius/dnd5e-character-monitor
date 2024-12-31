@@ -5,8 +5,8 @@
     "version": "1.0.0",
     "authors": [
         {
-            "name": "enso",
-            "discord": "enso#0361"
+            "name": "Mezzarius",
+            "discord": "Mezzarius#0828"
         }
     ],
     "compatibility": {
@@ -19,7 +19,7 @@
                 "id": "dnd5e",
                 "type": "system",
                 "compatibility": {
-                    "minimum": "3.0.0"
+                    "minimum": "3.3.1"
                 }
             }
         ],
@@ -61,7 +61,7 @@
         }
     ],
     "socket": true,
-    "url": "https://github.com/jessev14/dnd5e-character-monitor",
-    "manifest": "https://github.com/jessev14/dnd5e-character-monitor/releases/latest/download/module.json",
-    "download": "https://github.com/jessev14/dnd5e-character-monitor/releases/download/1.0.0/module.zip"
+    "url": "https://github.com/Mezzarius/dnd5e-character-monitor",
+    "manifest": "https://github.com/Mezzarius/dnd5e-character-monitor/releases/latest/download/module.json",
+    "download": "https://github.com/Mezzarius/dnd5e-character-monitor/releases/download/1.0.0/module.zip"
 }
